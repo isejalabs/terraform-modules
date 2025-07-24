@@ -16,12 +16,12 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "\\.hcl$",
-        "\\.tf$",
-        "\\.tftpl$",
-        "\\.yaml$",
-        "\\.sh$"
+      "managerFilePatterns": [
+        "/\\.hcl$/",
+        "/\\.tf$/",
+        "/\\.tftpl$/",
+        "/\\.yaml$/",
+        "/\\.sh$/"
       ],
       "matchStrings": [
         "(?<currentValue>[\\w+\\.\\-]*)['\",;]*\\s*#\\s?renovate: (?<datasource>\\S+)=(?<depName>\\S+)\\s?(registry=(?<registryUrl>\\S+))?\\s?(versioning=(?<versioning>\\S+))?"
