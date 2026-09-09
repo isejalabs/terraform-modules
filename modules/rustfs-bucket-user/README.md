@@ -11,6 +11,8 @@ Provisions, on a RustFS-backed S3-compatible store:
 Each consumer of RustFS storage gets its own bucket and its own least-privilege user, instead of every app
 sharing one set of admin credentials.
 
+See the [Changelog](CHANGELOG.md) for all notable changes.
+
 ## Provider
 
 Uses the community [`weinmann-emt/rustfs`](https://github.com/weinmann-emt/terraform-provider-rustfs) provider
