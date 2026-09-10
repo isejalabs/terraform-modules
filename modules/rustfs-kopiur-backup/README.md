@@ -5,8 +5,11 @@ it has no resources of its own beyond what's genuinely kopiur-specific:
 
 - [`rustfs-bucket-user`](../rustfs-bucket-user) provisions the bucket, quota, least-privilege policy, and
   dedicated user on RustFS.
-- [`onepassword-item`](../onepassword-item) writes the resulting `access_key`/`secret_key`, plus a
-  generated `KOPIA_PASSWORD`, into a single `kopiur-backup#<env>` 1Password item.
+- [`onepassword-item`](../onepassword-item) writes the resulting credentials, plus a generated
+  `KOPIA_PASSWORD`, into a single `kopiur-backup#<env>` 1Password item -- field labels `AWS_ACCESS_KEY_ID`,
+  `AWS_SECRET_ACCESS_KEY`, and `KOPIA_PASSWORD`, matching exactly what `kopiur-repository`'s and
+  `kopiur-secret`'s `ExternalSecret`s in `isejalabs/homelab` expect (`dataFrom.extract` pulls every field
+  in the item as a flat key-value map, keyed by label).
 
 See the [Changelog](CHANGELOG.md) for all notable changes.
 

@@ -22,8 +22,8 @@ module "secret" {
     {
       label = "s3"
       fields = [
-        { label = "access_key", value = module.bucket_user.access_key },
-        { label = "secret_key", value = module.bucket_user.secret_key, type = "CONCEALED" },
+        { label = "AWS_ACCESS_KEY_ID", value = module.bucket_user.access_key },
+        { label = "AWS_SECRET_ACCESS_KEY", value = module.bucket_user.secret_key, type = "CONCEALED" },
         { label = "KOPIA_PASSWORD", value = random_password.kopia_password.result, type = "CONCEALED" },
       ]
     },
