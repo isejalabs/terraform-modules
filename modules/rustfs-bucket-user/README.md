@@ -80,6 +80,19 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
   survived untouched, so re-applying the original `name` recreated the same credential. Don't rename without
   either emptying the bucket first or a `terragrunt import`-based two-step approach.
 - Bucket lifecycle/replication/encryption are not configured.
+- **Disaster recovery (Terraform state lost, bucket/user still exist on RustFS): `rustfs_user.secret_key`
+  cannot be recovered via plain `terraform import`.** The provider's `Read` never actually fetches it from
+  RustFS (the admin API doesn't expose it) -- it only preserves whatever's already in state, which after a
+  fresh import is empty. Since `secret_key` forces replacement on any change, importing `rustfs_user` as-is
+  will always want to replace it on the next `apply` (generating a new secret), even if the value you're
+  about to set happens to be identical to the real one. If you have the real secret from another surviving
+  source (e.g. the corresponding 1Password item, or a backed-up Terraform state), the only way to adopt it
+  cleanly is manual state surgery: `terraform state pull`, patch the `rustfs_user` instance's `secret_key`
+  attribute (and bump `serial`) in the JSON, then `terraform state push`. `random_password.user_secret` (and
+  `random_password.kopia_password` in `rustfs-kopiur-backup`) import normally by contrast -- both have
+  `lifecycle { ignore_changes = [length, special] }` so an imported password's original generation
+  parameters don't force a replacement either. Verified end-to-end via a full from-scratch import against a
+  real `dev` bucket/user/item (against a throwaway local state, never applied).
 
 ## Feedback
 

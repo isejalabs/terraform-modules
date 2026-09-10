@@ -49,3 +49,8 @@ Initial module implementation -- not tagged/released yet.
   block wasn't picked up reliably.
 
 ### Fixed
+
+- `random_password.user_secret` no longer forces a replacement when imported with different original
+  generation parameters (`length`/`special`) than this module's own -- found via a full disaster-recovery
+  import test against a real bucket/user. `rustfs_user.secret_key` itself still can't be recovered via
+  plain import (a provider limitation, not fixable here); see the new caveat below.
