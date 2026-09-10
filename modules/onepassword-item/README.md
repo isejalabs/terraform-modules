@@ -51,3 +51,7 @@ See [`docs/module.md`](docs/module.md) for the full auto-generated reference (al
   item (generate every field it needs, even ones that could otherwise be manual) or use a separate item
   for the hand-maintained parts. Splitting ownership of the same item between Terraform and a human is a
   drift/conflict risk.
+
+## Feedback
+
+Want something added or changed? Open an [issue](https://github.com/isejalabs/terraform-modules/issues) or start a discussion.
