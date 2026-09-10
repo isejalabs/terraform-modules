@@ -51,3 +51,7 @@ item.
 - All caveats of [`rustfs-bucket-user`](../rustfs-bucket-user) and
   [`onepassword-item`](../onepassword-item) apply here too (rename safety, no credential rotation,
   single-item ownership).
+
+## Feedback
+
+Want something added or changed? Open an [issue](https://github.com/isejalabs/terraform-modules/issues).

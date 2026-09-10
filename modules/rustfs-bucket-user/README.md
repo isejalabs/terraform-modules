@@ -83,3 +83,7 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
   survived untouched, so re-applying the original `name` recreated the same credential. Don't rename without
   either emptying the bucket first or a `terragrunt import`-based two-step approach.
 - Bucket lifecycle/replication/encryption are not configured.
+
+## Feedback
+
+Want something added or changed? Open an [issue](https://github.com/isejalabs/terraform-modules/issues).
