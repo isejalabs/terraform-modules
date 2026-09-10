@@ -72,9 +72,11 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
   provider's `main` branch but isn't in any published release yet (latest is `v0.0.8`). The variable is in
   place so callers don't need a breaking change once a release ships it, but no `rustfs_bucket_versioning`
   resource is created either way for now.
-- No credential rotation / lifetime for the generated user secret (e.g. a `time_rotating` keeper on the
-  generated secret, or writing straight into a secrets manager via its own Terraform provider instead of a
-  manual `terraform output` copy-paste) -- see [#21](https://github.com/isejalabs/terraform-modules/issues/21).
+- No automated credential rotation / lifetime for the generated user secret (e.g. a `time_rotating` keeper,
+  or writing straight into a secrets manager via its own Terraform provider instead of a manual
+  `terraform output` copy-paste) -- see [#21](https://github.com/isejalabs/terraform-modules/issues/21).
+  Manual rotation (replacing `random_password.user_secret` via `-replace`) is safe and documented in
+  [`rustfs-kopiur-backup`'s docs/rotation.md](../rustfs-kopiur-backup/docs/rotation.md).
 - Renaming (changing `var.name` on an existing deployment) is **not safe as a single `apply`**: `rustfs_bucket`
   and `rustfs_user` both force a destroy-then-create replacement. If the bucket isn't empty, the bucket destroy
   fails -- but not before the user destroy (unrelated in the dependency graph) has already succeeded, briefly
