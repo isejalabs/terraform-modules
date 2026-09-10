@@ -76,7 +76,7 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
   or writing straight into a secrets manager via its own Terraform provider instead of a manual
   `terraform output` copy-paste) -- see [#21](https://github.com/isejalabs/terraform-modules/issues/21).
   Manual rotation (replacing `random_password.user_secret` via `-replace`) is safe and documented in
-  [`rustfs-kopiur-backup`'s ROTATION.md](../rustfs-kopiur-backup/ROTATION.md).
+  [`rustfs-kopiur-backup`'s docs/rotation.md](../rustfs-kopiur-backup/docs/rotation.md).
 - Renaming (changing `var.name` on an existing deployment) is **not safe as a single `apply`**: `rustfs_bucket`
   and `rustfs_user` both force a destroy-then-create replacement. If the bucket isn't empty, the bucket destroy
   fails -- but not before the user destroy (unrelated in the dependency graph) has already succeeded, briefly
