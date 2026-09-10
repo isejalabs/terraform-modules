@@ -86,4 +86,4 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
 
 ## Feedback
 
-Want something added or changed? Open an [issue](https://github.com/isejalabs/terraform-modules/issues) or start a discussion.
+Want something added or changed? Open an [issue](https://github.com/isejalabs/terraform-modules/issues).

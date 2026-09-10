@@ -54,4 +54,4 @@ See [`docs/module.md`](docs/module.md) for the full auto-generated reference (al
 
 ## Feedback
 
-Want something added or changed? Open an [issue](https://github.com/isejalabs/terraform-modules/issues) or start a discussion.
+Want something added or changed? Open an [issue](https://github.com/isejalabs/terraform-modules/issues).
