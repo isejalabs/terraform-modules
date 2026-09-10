@@ -43,4 +43,9 @@ Initial module implementation -- not tagged/released yet.
 
 ### Removed
 
+- `var.rustfs` (provider credentials). This module no longer configures the `rustfs` provider itself --
+  per Terraform's guidance on providers within modules, only the calling root should do that. Found while
+  composing this module as a child of `rustfs-kopiur-backup`, where the module's own internal provider
+  block wasn't picked up reliably.
+
 ### Fixed

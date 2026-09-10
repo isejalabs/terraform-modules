@@ -6,7 +6,3 @@ terraform {
     }
   }
 }
-
-provider "onepassword" {
-  service_account_token = var.onepassword.service_account_token
-}

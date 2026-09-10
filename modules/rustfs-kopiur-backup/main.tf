@@ -1,8 +1,7 @@
 module "bucket_user" {
   source = "../rustfs-bucket-user"
 
-  name   = var.name
-  rustfs = var.rustfs
+  name = var.name
 }
 
 resource "random_password" "kopia_password" {
@@ -13,10 +12,9 @@ resource "random_password" "kopia_password" {
 module "secret" {
   source = "../onepassword-item"
 
-  onepassword = var.onepassword
-  vault_id    = var.onepassword_vault_id
-  title       = "kopiur-backup#${var.env}"
-  note        = "Managed by OpenTofu -- edit terraform-modules//modules/rustfs-kopiur-backup and re-apply, don't hand-edit fields here."
+  vault_id = var.onepassword_vault_id
+  title    = "kopiur-backup#${var.env}"
+  note     = "Managed by OpenTofu -- edit terraform-modules//modules/rustfs-kopiur-backup and re-apply, don't hand-edit fields here."
 
   sections = [
     {

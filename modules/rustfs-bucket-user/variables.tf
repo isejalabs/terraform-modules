@@ -1,13 +1,3 @@
-variable "rustfs" {
-  description = "RustFS admin endpoint and credentials used to provision the bucket/policy/user."
-  type = object({
-    endpoint      = string
-    access_key    = string
-    access_secret = string
-  })
-  sensitive = true
-}
-
 variable "name" {
   description = "Canonical name for this bucket/user/policy triple. Used verbatim for the bucket name and the dedicated user's access key, and as the base name (with a `-rw` suffix) for its policy -- one input so all three never drift apart."
   type        = string

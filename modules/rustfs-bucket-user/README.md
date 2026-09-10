@@ -23,16 +23,24 @@ provider rather than `hashicorp/aws` pointed at a custom endpoint.
 
 ## Usage
 
+This module has no provider configuration of its own -- per Terraform's own guidance on
+[providers within modules](https://developer.hashicorp.com/terraform/language/modules/develop/providers),
+only the root module should configure providers. Whatever calls this module (a wrapping module like
+[`rustfs-kopiur-backup`](../rustfs-kopiur-backup), or your own root config) must configure the `rustfs`
+provider itself:
+
 ```hcl
+provider "rustfs" {
+  endpoint      = "rustfs.example.com:9000"
+  access_key    = var.rustfs_admin_access_key
+  access_secret = var.rustfs_admin_access_secret
+  ssl           = true
+}
+
 module "kopiur_backup_bucket" {
   source = "git::https://github.com/isejalabs/terraform-modules.git//modules/rustfs-bucket-user"
 
   name = "dev-kopiur-backup"
-  rustfs = {
-    endpoint      = "rustfs.example.com:9000"
-    access_key    = var.rustfs_admin_access_key
-    access_secret = var.rustfs_admin_access_secret
-  }
 }
 
 output "kopiur_backup_access_key" {
@@ -47,17 +55,6 @@ output "kopiur_backup_secret_key" {
 
 `name` is the single canonical name for the bucket/user/policy triple -- used verbatim for the bucket name and
 the user's access key, and with a `-rw` suffix for the policy name, so the three can't drift apart.
-
-`var.rustfs` (admin endpoint/credentials) is never stored by this module -- pass it in from wherever your admin
-credentials already live (a secrets manager, SOPS, Vault, ...):
-
-```hcl
-rustfs = {
-  endpoint      = "rustfs.example.com:9000"
-  access_key    = "<rustfs admin access key>"
-  access_secret = "<rustfs admin secret key>"
-}
-```
 
 See [`docs/module.md`](docs/module.md) for the full auto-generated reference (all inputs/outputs/resources).
 

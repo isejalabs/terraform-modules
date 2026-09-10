@@ -1,11 +1,3 @@
-variable "onepassword" {
-  description = "1Password service account token used to manage the item."
-  type = object({
-    service_account_token = string
-  })
-  sensitive = true
-}
-
 variable "vault_id" {
   description = "UUID of the 1Password vault the item is created in."
   type        = string
