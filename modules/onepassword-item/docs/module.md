@@ -25,7 +25,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_category"></a> [category](#input\_category) | Category of the 1Password item. | `string` | `"password"` | no |
+| <a name="input_category"></a> [category](#input\_category) | Category of the 1Password item. Changing this on an existing item forces a destroy-then-create replacement. | `string` | `"login"` | no |
 | <a name="input_note"></a> [note](#input\_note) | Plain-text note for the item. | `string` | `null` | no |
 | <a name="input_onepassword"></a> [onepassword](#input\_onepassword) | 1Password service account token used to manage the item. | <pre>object({<br/>    service_account_token = string<br/>  })</pre> | n/a | yes |
 | <a name="input_sections"></a> [sections](#input\_sections) | Sections and fields to write into the item. | <pre>list(object({<br/>    label = string<br/>    fields = list(object({<br/>      label = string<br/>      value = string<br/>      type  = optional(string, "STRING")<br/>    }))<br/>  }))</pre> | n/a | yes |
