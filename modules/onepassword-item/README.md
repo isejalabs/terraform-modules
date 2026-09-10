@@ -51,6 +51,9 @@ See [`docs/module.md`](docs/module.md) for the full auto-generated reference (al
   item (generate every field it needs, even ones that could otherwise be manual) or use a separate item
   for the hand-maintained parts. Splitting ownership of the same item between Terraform and a human is a
   drift/conflict risk.
+- `var.category` forces a destroy-then-create replacement if changed on an existing item (a provider-level
+  constraint, not this module's). If importing a pre-existing item, set it to match that item's actual
+  category first.
 
 ## Feedback
 

@@ -17,9 +17,9 @@ variable "title" {
 }
 
 variable "category" {
-  description = "Category of the 1Password item."
+  description = "Category of the 1Password item. Changing this on an existing item forces a destroy-then-create replacement."
   type        = string
-  default     = "password"
+  default     = "login"
 }
 
 variable "tags" {
