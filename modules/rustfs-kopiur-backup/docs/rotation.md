@@ -26,15 +26,48 @@ the repository was actually encrypted with, locking kopiur out of its own backup
 
 Correct order:
 
-1. Re-key the kopia repository itself first, out of band (`kopia repository change-password` from a client
-   that already has the *current* password), choosing the new password yourself.
+1. Re-key the kopia repository itself first, out of band, choosing the new password yourself:
+
+   ```sh
+   kopia repository connect s3 --bucket=<bucket> --endpoint=<rustfs-endpoint> \
+     --access-key=<AWS_ACCESS_KEY_ID> --secret-access-key=<AWS_SECRET_ACCESS_KEY> \
+     --password=<CURRENT KOPIA_PASSWORD>
+   kopia repository change-password --new-password=<NEW KOPIA_PASSWORD>
+   # this new password is the value you'll set in Terraform's state below
+   ```
+
 2. Only once that's confirmed to have succeeded, bring Terraform's state in line with the new password you
-   chose -- via manual state surgery (`state pull` -> patch the `random_password.kopia_password` instance's
-   `result` attribute -> `state push`), the same technique used for disaster-recovery imports (see
-   `rustfs-bucket-user`'s README). There's no clean `-replace` path here, because Terraform generating its
-   own new value and the repository's actual re-keyed value are two independent things that must match
-   exactly.
+   just chose. There's no clean `-replace` path here (Terraform generating its own new value and the
+   repository's actual re-keyed value are two independent things that must match exactly), so this is
+   manual state surgery -- the same technique used for disaster-recovery imports (see `rustfs-bucket-user`'s
+   README):
+
+   ```sh
+   tofu state pull > state.json
+
+   NEW_KOPIA_PASSWORD='<the password you just set in step 1>'
+   jq --arg pw "$NEW_KOPIA_PASSWORD" '
+     .serial += 1
+     | .resources |= map(
+         if .type == "random_password" and .name == "kopia_password"
+         then .instances[0].attributes.result = $pw
+         else . end
+       )
+   ' state.json > state.patched.json
+
+   tofu state push state.patched.json
+   rm state.json state.patched.json
+   unset NEW_KOPIA_PASSWORD
+   ```
+
+   Prefix the `NEW_KOPIA_PASSWORD=...` line with a space if your shell has `HISTCONTROL=ignorespace` set, to
+   avoid leaving the password in your shell history.
+
 3. `apply` to push the corrected value into the 1Password item.
+
+   ```sh
+   tofu apply
+   ```
 
 ## 1Password service account token
 
