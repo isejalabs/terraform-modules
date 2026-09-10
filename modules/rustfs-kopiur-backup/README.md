@@ -11,7 +11,8 @@ it has no resources of its own beyond what's genuinely kopiur-specific:
   `kopiur-secret`'s `ExternalSecret`s in `isejalabs/homelab` expect (`dataFrom.extract` pulls every field
   in the item as a flat key-value map, keyed by label).
 
-See the [Changelog](CHANGELOG.md) for all notable changes.
+See the [Changelog](CHANGELOG.md) for all notable changes, and [ROTATION.md](ROTATION.md) for how to
+rotate each of the credentials this module touches -- they don't all rotate the same way.
 
 ## Usage
 
@@ -52,8 +53,9 @@ item.
   no separate output for it (unlike `access_key`/`secret_key`), since it isn't meant to be consumed by
   anything other than the 1Password item itself.
 - All caveats of [`rustfs-bucket-user`](../rustfs-bucket-user) and
-  [`onepassword-item`](../onepassword-item) apply here too (rename safety, no credential rotation,
-  single-item ownership).
+  [`onepassword-item`](../onepassword-item) apply here too (rename safety, single-item ownership). Rotation
+  is manual for now (see [ROTATION.md](ROTATION.md)) -- automating it is tracked in
+  [#21](https://github.com/isejalabs/terraform-modules/issues/21).
 
 ## Feedback
 
