@@ -1,7 +1,14 @@
+locals {
+  # Only var.name (the shared "kopiur-backup" stem) and var.env differ in format between the bucket/user
+  # name and the 1Password item title -- computed here once so neither this module nor its callers repeat
+  # the literal.
+  full_name = "${var.env}-${var.name}"
+}
+
 module "bucket_user" {
   source = "../rustfs-bucket-user"
 
-  name = var.name
+  name = local.full_name
 }
 
 resource "random_password" "kopia_password" {
@@ -20,7 +27,7 @@ module "secret" {
   source = "../onepassword-item"
 
   vault_id = var.onepassword_vault_id
-  title    = "kopiur-backup#${var.env}"
+  title    = "${var.name}#${var.env}"
   note     = "Managed by OpenTofu -- edit terraform-modules//modules/rustfs-kopiur-backup and re-apply, don't hand-edit fields here."
 
   sections = [
