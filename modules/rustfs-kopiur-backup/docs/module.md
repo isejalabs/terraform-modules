@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_onepassword"></a> [onepassword](#requirement\_onepassword) | ~> 3.3 |
 | <a name="requirement_random"></a> [random](#requirement\_random) | ~> 3.6 |
 | <a name="requirement_rustfs"></a> [rustfs](#requirement\_rustfs) | ~> 0.0.8 |
@@ -10,26 +10,26 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_random"></a> [random](#provider\_random) | ~> 3.6 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_bucket_user"></a> [bucket\_user](#module\_bucket\_user) | ../rustfs-bucket-user | n/a |
 | <a name="module_secret"></a> [secret](#module\_secret) | ../onepassword-item | n/a |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [random_password.kopia_password](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_env"></a> [env](#input\_env) | Environment identifier. Combined with var.name to build the bucket/user/policy name ("<env>-<name>") and the 1Password item title ("<name>#<env>"). | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Base name for the bucket/user/policy triple and the 1Password item title. Combined with var.env as "<env>-<name>" (bucket/user/policy, passed through to rustfs-bucket-user) and "<name>#<env>" (1Password item title). | `string` | `"kopiur-backup"` | no |
 | <a name="input_onepassword"></a> [onepassword](#input\_onepassword) | 1Password service account token used to write the generated credentials. | <pre>object({<br/>    service_account_token = string<br/>  })</pre> | n/a | yes |
@@ -39,7 +39,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_access_key"></a> [access\_key](#output\_access\_key) | n/a |
 | <a name="output_bucket_name"></a> [bucket\_name](#output\_bucket\_name) | n/a |
 | <a name="output_onepassword_item_uuid"></a> [onepassword\_item\_uuid](#output\_onepassword\_item\_uuid) | n/a |
