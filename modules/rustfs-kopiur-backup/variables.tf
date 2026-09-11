@@ -1,10 +1,11 @@
 variable "name" {
-  description = "Canonical name for the bucket/user/policy triple, passed through to rustfs-bucket-user."
+  description = "Base name for the bucket/user/policy triple and the 1Password item title. Combined with var.env as \"<env>-<name>\" (bucket/user/policy, passed through to rustfs-bucket-user) and \"<name>#<env>\" (1Password item title)."
   type        = string
+  default     = "kopiur-backup"
 }
 
 variable "env" {
-  description = "Environment identifier, used to build the 1Password item title (kopiur-backup#<env>)."
+  description = "Environment identifier. Combined with var.name to build the bucket/user/policy name (\"<env>-<name>\") and the 1Password item title (\"<name>#<env>\")."
   type        = string
 }
 

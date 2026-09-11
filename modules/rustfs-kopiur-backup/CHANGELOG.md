@@ -43,6 +43,12 @@ Initial module implementation -- not tagged/released yet.
 
 ### Changed
 
+- `var.name` is now the shared *base* name (defaulting to `"kopiur-backup"`) instead of the full
+  bucket/user/policy name -- the module derives `<env>-<name>` for `rustfs-bucket-user` and `<name>#<env>`
+  for the 1Password item title itself, so the `kopiur-backup` string lives in exactly one place (this
+  variable's default) instead of being duplicated in the item title (previously hardcoded here) and in
+  every caller's own `<env>-kopiur-backup` computation.
+
 ### Removed
 
 ### Fixed

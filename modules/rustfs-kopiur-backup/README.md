@@ -20,8 +20,7 @@ to rotate each of the credentials this module touches -- they don't all rotate t
 module "dev_kopiur_backup" {
   source = "git::https://github.com/isejalabs/terraform-modules.git//modules/rustfs-kopiur-backup"
 
-  name = "dev-kopiur-backup"
-  env  = "dev"
+  env = "dev"
 
   rustfs = {
     endpoint      = "rustfs.example.com:9000"
@@ -35,9 +34,11 @@ module "dev_kopiur_backup" {
 }
 ```
 
-`name` is the bucket/user/policy name (see [`rustfs-bucket-user`](../rustfs-bucket-user)'s README);
-`env` is used only to build the 1Password item title, `kopiur-backup#<env>` -- the two are separate inputs
-because they don't share the same format (e.g. `name = "dev-kopiur-backup"`, `env = "dev"`).
+`name` defaults to `"kopiur-backup"` and is the shared base for both the bucket/user/policy name (see
+[`rustfs-bucket-user`](../rustfs-bucket-user)'s README) and the 1Password item title -- combined with `env`
+as `<env>-<name>` (e.g. `dev-kopiur-backup`) and `<name>#<env>` (e.g. `kopiur-backup#dev`) respectively,
+since the two don't share the same format. Override `name` only if you need a different base than
+`kopiur-backup` for a given deployment.
 
 See [`docs/module.md`](docs/module.md) for the full auto-generated reference (all inputs/outputs/resources).
 
