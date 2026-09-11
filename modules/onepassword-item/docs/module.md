@@ -2,13 +2,13 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_onepassword"></a> [onepassword](#requirement\_onepassword) | ~> 3.3 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_onepassword"></a> [onepassword](#provider\_onepassword) | ~> 3.3 |
 
 ## Modules
@@ -18,13 +18,13 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [onepassword_item.this](https://registry.terraform.io/providers/1Password/onepassword/latest/docs/resources/item) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_category"></a> [category](#input\_category) | Category of the 1Password item. Changing this on an existing item forces a destroy-then-create replacement. | `string` | `"login"` | no |
 | <a name="input_note"></a> [note](#input\_note) | Plain-text note for the item. | `string` | `null` | no |
 | <a name="input_sections"></a> [sections](#input\_sections) | Sections and fields to write into the item. | <pre>list(object({<br/>    label = string<br/>    fields = list(object({<br/>      label = string<br/>      value = string<br/>      type  = optional(string, "STRING")<br/>    }))<br/>  }))</pre> | n/a | yes |
@@ -35,6 +35,6 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_item_uuid"></a> [item\_uuid](#output\_item\_uuid) | n/a |
 <!-- END_TF_DOCS -->
