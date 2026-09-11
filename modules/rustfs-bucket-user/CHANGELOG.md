@@ -31,15 +31,21 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ## [Unreleased]
 
-Initial module implementation -- not tagged/released yet.
+### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.1.0] - 2026-09-11
 
 ### Added
 
 - `rustfs_bucket`, `rustfs_policy` (scoped to only that bucket), and `rustfs_user` (dedicated, least-privilege) resources, so each consumer of RustFS storage gets its own bucket and credentials instead of sharing admin credentials ([#13](https://github.com/isejalabs/terraform-modules/pull/13)).
 - `var.quota` (default 10 GiB) via `rustfs_quota`.
 - `var.versioning_enabled` -- accepted but currently a no-op; `rustfs_bucket_versioning` isn't in any published `weinmann-emt/rustfs` provider release yet (see [#14](https://github.com/isejalabs/terraform-modules/issues/14)).
-
-### Changed
 
 ### Removed
 
