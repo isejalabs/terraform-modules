@@ -38,6 +38,8 @@ Initial module implementation -- not tagged/released yet.
 - Orchestrates `rustfs-bucket-user` and `onepassword-item` to provision a kopiur backup bucket/user and
   write the resulting credentials (plus a generated `KOPIA_PASSWORD`) into a single `kopiur-backup#<env>`
   1Password item.
+- Owns configuration of both the `rustfs` and `onepassword` providers, since its two child modules are
+  provider-config-free (per Terraform's guidance on providers within modules).
 
 ### Changed
 

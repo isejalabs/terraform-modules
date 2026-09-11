@@ -34,6 +34,13 @@ resource "rustfs_policy" "this" {
 resource "random_password" "user_secret" {
   length  = 40
   special = false
+
+  # If this is ever imported (e.g. disaster recovery, re-adopting a bucket/user that already exists on
+  # RustFS), don't let a mismatch between its actual original parameters and the ones above force a
+  # replacement -- that would silently regenerate a real, already-in-use secret.
+  lifecycle {
+    ignore_changes = [length, special]
+  }
 }
 
 resource "rustfs_user" "this" {

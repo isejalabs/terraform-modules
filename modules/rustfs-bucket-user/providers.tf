@@ -10,10 +10,3 @@ terraform {
     }
   }
 }
-
-provider "rustfs" {
-  endpoint      = var.rustfs.endpoint
-  access_key    = var.rustfs.access_key
-  access_secret = var.rustfs.access_secret
-  ssl           = true
-}

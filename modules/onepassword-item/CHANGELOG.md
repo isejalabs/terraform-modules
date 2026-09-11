@@ -42,4 +42,7 @@ Initial module implementation -- not tagged/released yet.
 
 ### Removed
 
+- `var.onepassword` (provider credentials). This module no longer configures the `onepassword` provider
+  itself -- per Terraform's guidance on providers within modules, only the calling root should do that.
+
 ### Fixed

@@ -23,16 +23,24 @@ provider rather than `hashicorp/aws` pointed at a custom endpoint.
 
 ## Usage
 
+This module has no provider configuration of its own -- per Terraform's own guidance on
+[providers within modules](https://developer.hashicorp.com/terraform/language/modules/develop/providers),
+only the root module should configure providers. Whatever calls this module (a wrapping module like
+[`rustfs-kopiur-backup`](../rustfs-kopiur-backup), or your own root config) must configure the `rustfs`
+provider itself:
+
 ```hcl
+provider "rustfs" {
+  endpoint      = "rustfs.example.com:9000"
+  access_key    = var.rustfs_admin_access_key
+  access_secret = var.rustfs_admin_access_secret
+  ssl           = true
+}
+
 module "kopiur_backup_bucket" {
   source = "git::https://github.com/isejalabs/terraform-modules.git//modules/rustfs-bucket-user"
 
   name = "dev-kopiur-backup"
-  rustfs = {
-    endpoint      = "rustfs.example.com:9000"
-    access_key    = var.rustfs_admin_access_key
-    access_secret = var.rustfs_admin_access_secret
-  }
 }
 
 output "kopiur_backup_access_key" {
@@ -47,17 +55,6 @@ output "kopiur_backup_secret_key" {
 
 `name` is the single canonical name for the bucket/user/policy triple -- used verbatim for the bucket name and
 the user's access key, and with a `-rw` suffix for the policy name, so the three can't drift apart.
-
-`var.rustfs` (admin endpoint/credentials) is never stored by this module -- pass it in from wherever your admin
-credentials already live (a secrets manager, SOPS, Vault, ...):
-
-```hcl
-rustfs = {
-  endpoint      = "rustfs.example.com:9000"
-  access_key    = "<rustfs admin access key>"
-  access_secret = "<rustfs admin secret key>"
-}
-```
 
 See [`docs/module.md`](docs/module.md) for the full auto-generated reference (all inputs/outputs/resources).
 
@@ -85,6 +82,29 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
   survived untouched, so re-applying the original `name` recreated the same credential. Don't rename without
   either emptying the bucket first or a `terragrunt import`-based two-step approach.
 - Bucket lifecycle/replication/encryption are not configured.
+- Right after creating a bucket, a `plan`/`refresh` can transiently fail reading `rustfs_quota` with
+  `ServiceUnavailable: authoritative bucket usage is not available yet` -- RustFS's usage-stats subsystem
+  needs a little time (observed up to ~1-2 minutes) to catch up for a brand-new bucket. Not a bug; just
+  retry after a short wait.
+- **If the RustFS user is deleted externally, `plan`/`apply` doesn't recover automatically -- it hard-fails.**
+  Unlike `onepassword_item` (which treats an externally-deleted item as drift and just plans a recreate),
+  `rustfs_user`'s `Read` propagates the raw `NoSuchResource` API error instead of clearing the resource from
+  state, blocking the whole plan. Remediation: `terraform state rm <address>` for just that resource, then a
+  normal `apply` recreates it -- using the same secret already in `random_password.user_secret` state, so
+  the credential itself doesn't change. Verified end-to-end against a real `dev` user.
+- **Disaster recovery (Terraform state lost, bucket/user still exist on RustFS): `rustfs_user.secret_key`
+  cannot be recovered via plain `terraform import`.** The provider's `Read` never actually fetches it from
+  RustFS (the admin API doesn't expose it) -- it only preserves whatever's already in state, which after a
+  fresh import is empty. Since `secret_key` forces replacement on any change, importing `rustfs_user` as-is
+  will always want to replace it on the next `apply` (generating a new secret), even if the value you're
+  about to set happens to be identical to the real one. If you have the real secret from another surviving
+  source (e.g. the corresponding 1Password item, or a backed-up Terraform state), the only way to adopt it
+  cleanly is manual state surgery: `terraform state pull`, patch the `rustfs_user` instance's `secret_key`
+  attribute (and bump `serial`) in the JSON, then `terraform state push`. `random_password.user_secret` (and
+  `random_password.kopia_password` in `rustfs-kopiur-backup`) import normally by contrast -- both have
+  `lifecycle { ignore_changes = [length, special] }` so an imported password's original generation
+  parameters don't force a replacement either. Verified end-to-end via a full from-scratch import against a
+  real `dev` bucket/user/item (against a throwaway local state, never applied).
 
 ## Feedback
 

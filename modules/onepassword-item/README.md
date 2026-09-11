@@ -16,13 +16,20 @@ instance being network-reachable from wherever Terraform runs).
 
 ## Usage
 
+This module has no provider configuration of its own -- per Terraform's own guidance on
+[providers within modules](https://developer.hashicorp.com/terraform/language/modules/develop/providers),
+only the root module should configure providers. Whatever calls this module (a wrapping module like
+[`rustfs-kopiur-backup`](../rustfs-kopiur-backup), or your own root config) must configure the
+`onepassword` provider itself:
+
 ```hcl
+provider "onepassword" {
+  service_account_token = var.onepassword_service_account_token
+}
+
 module "kopiur_backup_secret" {
   source = "git::https://github.com/isejalabs/terraform-modules.git//modules/onepassword-item"
 
-  onepassword = {
-    service_account_token = var.onepassword_service_account_token
-  }
   vault_id = var.onepassword_vault_id
   title    = "kopiur-backup#dev"
   note     = "Managed by OpenTofu -- edit terraform-modules//modules/rustfs-kopiur-backup and re-apply, don't hand-edit fields here."

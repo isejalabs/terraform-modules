@@ -43,4 +43,14 @@ Initial module implementation -- not tagged/released yet.
 
 ### Removed
 
+- `var.rustfs` (provider credentials). This module no longer configures the `rustfs` provider itself --
+  per Terraform's guidance on providers within modules, only the calling root should do that. Found while
+  composing this module as a child of `rustfs-kopiur-backup`, where the module's own internal provider
+  block wasn't picked up reliably.
+
 ### Fixed
+
+- `random_password.user_secret` no longer forces a replacement when imported with different original
+  generation parameters (`length`/`special`) than this module's own -- found via a full disaster-recovery
+  import test against a real bucket/user. `rustfs_user.secret_key` itself still can't be recovered via
+  plain import (a provider limitation, not fixable here); see the new caveat below.
