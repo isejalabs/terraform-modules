@@ -28,6 +28,6 @@ variable "onepassword" {
 }
 
 variable "onepassword_vault_id" {
-  description = "UUID of the 1Password vault the kopiur-backup#<env> item is created in."
+  description = "UUID of the 1Password vault the \"<name>#<env>\" item (see var.name) is created in."
   type        = string
 }
