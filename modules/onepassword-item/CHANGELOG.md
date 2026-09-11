@@ -31,18 +31,22 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ## [Unreleased]
 
-Initial module implementation -- not tagged/released yet.
+### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.1.0] - 2026-09-11
 
 ### Added
 
 - `onepassword_item` resource, generic over `var.sections`/`var.fields`: any module generating credentials can reuse this instead of hand-rolling its own `onepassword_item` resource.
 - Items are tagged `iac-managed` by default (`var.tags`) and accept a plain-text `var.note`, so it's clear in the 1Password UI that hand-editing fields will be reverted on the next `apply`.
 
-### Changed
-
 ### Removed
 
 - `var.onepassword` (provider credentials). This module no longer configures the `onepassword` provider
   itself -- per Terraform's guidance on providers within modules, only the calling root should do that.
-
-### Fixed
