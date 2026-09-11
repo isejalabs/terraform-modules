@@ -31,7 +31,15 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ## [Unreleased]
 
-Initial module implementation -- not tagged/released yet.
+### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.1.0] - 2026-09-11
 
 ### Added
 
@@ -48,7 +56,3 @@ Initial module implementation -- not tagged/released yet.
   for the 1Password item title itself, so the `kopiur-backup` string lives in exactly one place (this
   variable's default) instead of being duplicated in the item title (previously hardcoded here) and in
   every caller's own `<env>-kopiur-backup` computation.
-
-### Removed
-
-### Fixed
