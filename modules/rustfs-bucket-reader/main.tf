@@ -36,7 +36,7 @@ module "secret" {
   source = "../onepassword-item"
 
   vault_id = var.onepassword_vault_id
-  title    = var.name
+  title    = coalesce(var.item_title, var.name)
   note     = "Managed by OpenTofu -- edit terraform-modules//modules/rustfs-bucket-reader and re-apply, don't hand-edit fields here."
 
   sections = [

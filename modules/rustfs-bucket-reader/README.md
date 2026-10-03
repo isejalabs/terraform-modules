@@ -27,6 +27,7 @@ module "rustfs_monitoring" {
   source = "git::https://github.com/isejalabs/terraform-modules.git//modules/rustfs-bucket-reader"
 
   name         = "prod-checkmk-monitoring"
+  item_title   = "checkmk-monitoring#prod" # optional, defaults to name
   bucket_names = ["prod-kopiur-backup", "prod-longhorn-backup"]
 
   rustfs = {
@@ -45,7 +46,7 @@ See [`docs/module.md`](docs/module.md) for the full auto-generated reference (al
 
 ## Outputs
 
-No secret is exposed as an output. The credential's only destination is the 1Password item (`item_uuid` identifies it), whose fields are `ACCESS_KEY` and `SECRET_KEY`, both concealed. The access key is not secret, but it is stored concealed so the two credential fields are presented consistently. The module deliberately has no `access_key` output either: the 1Password item is the single delivery path.
+No secret is exposed as an output. The credential's only destination is the 1Password item (`item_uuid` identifies it; its title is `item_title`, or `name` if unset), whose fields are `ACCESS_KEY` and `SECRET_KEY`, both concealed. The access key is not secret, but it is stored concealed so the two credential fields are presented consistently. The module deliberately has no `access_key` output either: the 1Password item is the single delivery path.
 
 ## Tests
 

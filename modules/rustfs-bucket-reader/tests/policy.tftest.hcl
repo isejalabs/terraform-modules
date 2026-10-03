@@ -57,3 +57,11 @@ run "blank_bucket_name_is_rejected" {
 
   expect_failures = [var.bucket_names]
 }
+
+run "custom_item_title_plans" {
+  command = plan
+
+  variables {
+    item_title = "checkmk-monitoring#dev"
+  }
+}
