@@ -33,10 +33,18 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
-- Initial module: a read-only monitoring user whose policy allows only `s3:GetBucketQuota` on the listed existing buckets, with its credentials written to a 1Password item.
-
 ### Changed
 
 ### Removed
 
 ### Fixed
+
+## [0.1.0] - 2026-10-03
+
+### Added
+
+- `rustfs_policy` allowing only the bucket-scoped `s3:GetBucketQuota` action on the existing buckets listed in `var.bucket_names` (no object ARN, `ListBucket`, quota-setting or `admin:*` actions), a dedicated `rustfs_user` with a generated secret attached to it, and a 1Password item (via `onepassword-item`) holding both credential fields concealed ([#36](https://github.com/isejalabs/terraform-modules/pull/36)).
+- `var.name` (required): used verbatim as the user's access key and the 1Password item title, and with a `-ro` suffix as the policy name.
+- `var.bucket_names` validation: an empty set or a blank name is rejected.
+- Offline `tofu test` (mocked providers) asserting the policy shape.
+- No credential output, not even the non-secret access key; the 1Password item is the single delivery path.
