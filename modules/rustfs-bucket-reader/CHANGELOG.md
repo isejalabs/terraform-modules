@@ -33,13 +33,17 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
-- `var.item_title` (optional, defaults to `var.name`): title of the 1Password item, so it can follow a different naming convention than the RustFS-side names (for example `<thing>#<env>`).
-
 ### Changed
 
 ### Removed
 
 ### Fixed
+
+## [0.2.0] - 2026-10-03
+
+### Added
+
+- `var.item_title` (optional, defaults to `var.name`): title of the 1Password item, so it can follow a different naming convention than the RustFS-side names (for example `<thing>#<env>`) ([#41](https://github.com/isejalabs/terraform-modules/pull/41)).
 
 ## [0.1.0] - 2026-10-03
 
