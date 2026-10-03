@@ -33,6 +33,8 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+- `var.item_title` (optional, defaults to `var.name`): title of the 1Password item, so it can follow a different naming convention than the RustFS-side names (for example `<thing>#<env>`).
+
 ### Changed
 
 ### Removed

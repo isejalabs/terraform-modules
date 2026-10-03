@@ -1,6 +1,12 @@
 variable "name" {
-  description = "Canonical name for this user/policy pair. Used verbatim for the user's access key and the 1Password item title, and as the base name (with a `-ro` suffix) for the policy -- one input so they never drift apart. Required (no default) so the identity is always named after its consumer and environment; treat it as stable once applied, as changing it replaces the user, policy and item."
+  description = "Canonical name for this user/policy pair. Used verbatim for the user's access key (and, unless `item_title` is set, the 1Password item title), and as the base name (with a `-ro` suffix) for the policy -- one input so they never drift apart. Required (no default) so the identity is always named after its consumer and environment; treat it as stable once applied, as changing it replaces the user, policy and item."
   type        = string
+}
+
+variable "item_title" {
+  description = "Title of the 1Password item holding the credentials. Defaults to `name`. Set it to follow a different item naming convention than the RustFS-side names, for example `<thing>#<env>` for the `K8S` vault. Changing it on an existing deployment replaces the item."
+  type        = string
+  default     = null
 }
 
 variable "bucket_names" {
