@@ -12,6 +12,7 @@ A monorepo of small, independent Terraform/OpenTofu modules, each living under `
 
 - [`onepassword-item`](modules/onepassword-item) — generic module to create/manage a single 1Password item with an arbitrary set of sections/fields, reusable by any module that generates credentials.
 - [`rustfs-bucket-user`](modules/rustfs-bucket-user) — provisions a bucket, quota, least-privilege policy, and dedicated user on a RustFS-backed S3-compatible store.
+- [`rustfs-bucket-reader`](modules/rustfs-bucket-reader) — provisions a dedicated read-only user whose policy allows only `s3:GetBucketQuota` on existing buckets, and stores its credentials in 1Password.
 - [`rustfs-kopiur-backup`](modules/rustfs-kopiur-backup) — orchestrates `rustfs-bucket-user` and `onepassword-item` to provision kopiur's per-environment backup bucket/user and write the resulting credentials into 1Password.
 - [`talos-proxmox`](modules/talos-proxmox) — **proof of concept.** Provisions Proxmox VMs and bootstraps a Talos Linux Kubernetes cluster on them in one module.
 - [`vehagn-k8s`](modules/vehagn-k8s) — **stub only** (no `.tf` files, just `README.md`/`CHANGELOG.md`). Moved to its own repo, [`isejalabs/terraform-proxmox-talos`](https://github.com/isejalabs/terraform-proxmox-talos); kept here so history and inbound links stay resolvable.
