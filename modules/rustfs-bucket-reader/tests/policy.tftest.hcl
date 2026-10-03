@@ -6,7 +6,8 @@ mock_provider "random" {}
 mock_provider "onepassword" {}
 
 variables {
-  buckets              = ["prod-kopiur-backup", "dev-longhorn-backup"]
+  name                 = "dev-checkmk-monitoring"
+  bucket_names         = ["prod-kopiur-backup", "dev-longhorn-backup"]
   onepassword_vault_id = "vault-id"
   rustfs = {
     endpoint      = "rustfs.example.com:9000"
@@ -41,8 +42,18 @@ run "empty_bucket_list_is_rejected" {
   command = plan
 
   variables {
-    buckets = []
+    bucket_names = []
   }
 
-  expect_failures = [var.buckets]
+  expect_failures = [var.bucket_names]
+}
+
+run "blank_bucket_name_is_rejected" {
+  command = plan
+
+  variables {
+    bucket_names = ["dev-kopiur-backup", " "]
+  }
+
+  expect_failures = [var.bucket_names]
 }

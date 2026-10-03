@@ -2,7 +2,7 @@
 
 Provisions, on a RustFS-backed S3-compatible store, a read-only identity for capacity monitoring:
 
-- a policy (`rustfs_policy`) allowing only `s3:GetBucketQuota` on `arn:aws:s3:::<bucket>` for each bucket in `var.buckets`,
+- a policy (`rustfs_policy`) allowing only `s3:GetBucketQuota` on `arn:aws:s3:::<bucket>` for each bucket in `var.bucket_names`,
 - a dedicated user (`rustfs_user`) with a generated secret key, attached to that policy, and
 - a 1Password item (via [`onepassword-item`](../onepassword-item)) holding the access key and secret key.
 
@@ -26,7 +26,8 @@ Like [`rustfs-kopiur-backup`](../rustfs-kopiur-backup), this module is meant to 
 module "rustfs_monitoring" {
   source = "git::https://github.com/isejalabs/terraform-modules.git//modules/rustfs-bucket-reader"
 
-  buckets = ["prod-kopiur-backup", "prod-longhorn-backup"]
+  name         = "prod-checkmk-monitoring"
+  bucket_names = ["prod-kopiur-backup", "prod-longhorn-backup"]
 
   rustfs = {
     endpoint      = "rustfs.example.com:9000"
@@ -44,11 +45,11 @@ See [`docs/module.md`](docs/module.md) for the full auto-generated reference (al
 
 ## Outputs
 
-No secret is exposed as an output. The credential's only destination is the 1Password item (`item_uuid` identifies it), whose fields are `ACCESS_KEY` and `SECRET_KEY`.
+No secret is exposed as an output. The credential's only destination is the 1Password item (`item_uuid` identifies it), whose fields are `ACCESS_KEY` and `SECRET_KEY`, both concealed. The access key is not secret, but it is stored concealed so the two credential fields are presented consistently. The module deliberately has no `access_key` output either: the 1Password item is the single delivery path.
 
 ## Tests
 
-`tests/policy.tftest.hcl` runs offline with mocked providers (`tofu test` in this directory) and asserts the policy has exactly one statement, allowing only `s3:GetBucketQuota`, on exactly the listed bucket ARNs, and that an empty bucket list is rejected. It cannot prove how a live RustFS interprets the policy; that needs a check against a real instance.
+`tests/policy.tftest.hcl` runs offline with mocked providers (`tofu test` in this directory) and asserts the policy has exactly one statement, allowing only `s3:GetBucketQuota`, on exactly the listed bucket ARNs, and that an empty bucket list or a blank bucket name is rejected. It cannot prove how a live RustFS interprets the policy; that needs a check against a real instance.
 
 ## Caveats
 
@@ -56,7 +57,8 @@ No secret is exposed as an output. The credential's only destination is the 1Pas
 - RustFS beta maps `s3:GetBucketQuota` to the quota read, quota-stats and quota-check routes alike, so the policy can't be narrowed to one HTTP path with this action alone.
 - Each quota-stats request produces a warning-level RustFS admin event, so poll no faster than needed.
 - The same `rustfs_user` limitations as in [`rustfs-bucket-user`'s Caveats](../rustfs-bucket-user/README.md#caveats) apply: an externally deleted user hard-fails `plan`, and `secret_key` can't be recovered via plain `terraform import`.
-- Adding a bucket to `var.buckets` updates the policy in place; removing one revokes access on the next apply.
+- Renaming is not safe as a plain `apply`: `var.name` is the user's access key and the policy and 1Password item names derive from it, so changing it replaces the user, policy and item, briefly revoking the live credential. Treat `name` as stable once applied; the new credential has to be re-entered wherever it is consumed.
+- Adding a bucket to `var.bucket_names` updates the policy in place; removing one revokes access on the next apply.
 
 ## Feedback
 

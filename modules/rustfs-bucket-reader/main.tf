@@ -8,7 +8,7 @@ resource "rustfs_policy" "this" {
       effect = "Allow"
       action = ["s3:GetBucketQuota"]
       ressource = [
-        for bucket in var.buckets : "arn:aws:s3:::${bucket}"
+        for bucket in var.bucket_names : "arn:aws:s3:::${bucket}"
       ]
     },
   ]
@@ -43,7 +43,7 @@ module "secret" {
     {
       label = "rustfs"
       fields = [
-        { label = "ACCESS_KEY", value = rustfs_user.this.access_key, type = "STRING" },
+        { label = "ACCESS_KEY", value = rustfs_user.this.access_key, type = "CONCEALED" },
         { label = "SECRET_KEY", value = rustfs_user.this.secret_key, type = "CONCEALED" },
       ]
     },
