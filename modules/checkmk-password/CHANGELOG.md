@@ -33,10 +33,14 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
-- Initial module: reads one field of a 1Password item (by title, section and field label) and stores it as a `checkmk_password` Password Store entry, using the community provider `registry.terraform.io/blackmesaltd/checkmk` (v0.0.5, pinned exactly). The secret is never an output; `password_id` is validated against Checkmk's identifier rules; an offline `tofu test` (mocked providers) covers the lookup and the validation.
-
 ### Changed
 
 ### Removed
 
 ### Fixed
+
+## [0.1.0] - 2026-10-08
+
+### Added
+
+- Initial module: reads one field of a 1Password item (by title, section and field label) and stores it as a `checkmk_password` Password Store entry, using the community provider `registry.terraform.io/blackmesaltd/checkmk` (v0.0.5, pinned exactly). The secret is never an output; `password_id` is validated against Checkmk's identifier rules; an offline `tofu test` (mocked providers) covers the lookup and the validation. ([#45](https://github.com/isejalabs/terraform-modules/pull/45))
