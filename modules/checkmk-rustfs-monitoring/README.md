@@ -8,6 +8,7 @@ See the [Changelog](CHANGELOG.md) for all notable changes.
 
 - **An API-only host** (`tag_address_family = no-ip`, `tag_agent = special-agents`) in an existing folder. It must be a dedicated host: on a host with the normal Checkmk agent, a special-agent rule **replaces** the TCP agent connection (Checkmk generates only the special-agent program and no TCP connection), which would silence the existing checks of that host, for example the TrueNAS host itself. On the API-only host Checkmk shows "No Checkmk agent, all configured special agents" and address "No IP".
 - **One `checkmk_rule` per identity** for the ruleset `special_agents:rustfs_quota`, applying to that host only. Created only when `rules_enabled` is `true`.
+- **A polling-interval rule** (`extra_service_conf:check_interval`, `check_interval_minutes`, default 15): Checkmk fetches the data of a host and checks all its services once per check interval, one minute by default, and each run makes one request per bucket (and RustFS logs each one as a warning-level event). The rule applies to all services of the host, including the one that runs the special agent; verified in the generated Nagios configuration of a Checkmk Raw site (`check_interval 15.0`). It exists independently of `rules_enabled`, as the ruleset is built into Checkmk.
 - **A `checkmk_activation`** that makes the changes effective.
 
 The module does not create or manage the folder, the Password Store entries (that is `checkmk-password`), or the plugin that defines the ruleset.
@@ -52,7 +53,9 @@ module "checkmk_rustfs_monitoring" {
 }
 ```
 
-`rules_enabled` stays `false` until the plugin is installed on the site (otherwise Checkmk rejects the rule: it does not know the ruleset). The host and the activation are created either way. See [`docs/module.md`](docs/module.md) for the full auto-generated reference.
+### The `rules_enabled` switch
+
+The special-agent rules use the ruleset `special_agents:rustfs_quota`, which is defined by the plugin package (`rustfs_quota` in `isejalabs/checkmk-modules`), not by Checkmk itself. Checkmk rejects a rule for a ruleset it does not know (HTTP 400, "The ruleset of name 'special_agents:rustfs_quota' is not known"), so applying the rules before the plugin is installed on the site fails. `rules_enabled` (default `false`) lets everything else be applied first: the host, the polling interval and the activation are created either way, and the rules follow once the plugin is there. Order: install the plugin on the site, then set `rules_enabled = true` and apply. It also matters in the other direction: if the plugin is removed while rules exist, Checkmk no longer shows them and Terraform wants to recreate them and fails, so set `rules_enabled = false` and apply first, then remove the plugin. See [`docs/module.md`](docs/module.md) for the full auto-generated reference.
 
 ## Activation: safe by design
 

@@ -71,3 +71,14 @@ variable "identities" {
     error_message = "Each identity needs at least one bucket, and no blank values; quotes and backslashes are not allowed."
   }
 }
+
+variable "check_interval_minutes" {
+  description = "How often Checkmk fetches the data of the API-only host and checks its services, in minutes. Checkmk's default is one minute, which would mean one request per bucket every minute against the RustFS (and a warning-level RustFS event for each); the monitoring plan calls for 15 minutes. Applied to all services of the host, including the one that runs the special agent."
+  type        = number
+  default     = 15
+
+  validation {
+    condition     = var.check_interval_minutes >= 1 && var.check_interval_minutes <= 1440
+    error_message = "check_interval_minutes must be between 1 and 1440 (one day)."
+  }
+}

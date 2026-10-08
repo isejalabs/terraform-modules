@@ -33,7 +33,7 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
-- Initial module: a dedicated API-only host (`tag_address_family = no-ip`, `tag_agent = special-agents`) in an existing folder, one special-agent rule per RustFS monitoring identity for the ruleset `special_agents:rustfs_quota` (endpoint, access key, Password Store reference as the secret, bucket list; gated by `rules_enabled`, default `false`), and an activation with `force_foreign_changes = false` that re-runs when the host or a rule changes. Uses the community provider `registry.terraform.io/blackmesaltd/checkmk` (v0.0.5, pinned exactly). Offline `tofu test` (mocked provider).
+- Initial module: a dedicated API-only host (`tag_address_family = no-ip`, `tag_agent = special-agents`) in an existing folder, one special-agent rule per RustFS monitoring identity for the ruleset `special_agents:rustfs_quota` (endpoint, access key, Password Store reference as the secret, bucket list; gated by `rules_enabled`, default `false`), and an activation with `force_foreign_changes = false` that re-runs when the host or a rule changes. Uses the community provider `registry.terraform.io/blackmesaltd/checkmk` (v0.0.5, pinned exactly). A rule for the polling interval of the host (`check_interval_minutes`, default 15; Checkmk's default of one minute would mean a request per bucket every minute). Offline `tofu test` (mocked provider).
 
 ### Changed
 

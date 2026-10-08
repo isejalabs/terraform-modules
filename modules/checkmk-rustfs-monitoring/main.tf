@@ -46,6 +46,27 @@ resource "checkmk_rule" "special_agent" {
   }
 }
 
+# Polling interval of the host. With Checkmk's default of one minute, every bucket would be queried every minute. The
+# ruleset is built into Checkmk (unlike the special-agent ruleset), so this rule exists independently of rules_enabled.
+# The value is in minutes; no service condition, so it also covers the service that runs the special agent.
+resource "checkmk_rule" "check_interval" {
+  ruleset   = "extra_service_conf:check_interval"
+  folder    = "/"
+  value_raw = format("%.1f", var.check_interval_minutes)
+
+  properties = {
+    description = "RustFS quota monitoring: check interval of ${var.host_name}"
+    comment     = "Managed by OpenTofu -- edit terraform-modules//modules/checkmk-rustfs-monitoring and re-apply, don't hand-edit."
+  }
+
+  conditions = {
+    host_name = {
+      match_on = [checkmk_host.this.host_name]
+      operator = "one_of"
+    }
+  }
+}
+
 # Changes whenever the host or a rule changes, so the activation below re-runs. A `terraform_data` resource is used
 # because it always exists: `replace_triggered_by` cannot reference `checkmk_rule.special_agent` directly, since that
 # resource has no instances while rules_enabled is false and every plan would then fail ("no change found").
@@ -56,6 +77,7 @@ resource "terraform_data" "activation_trigger" {
       folder     = checkmk_host.this.folder
       attributes = checkmk_host.this.attributes
     }
+    check_interval = checkmk_rule.check_interval.value_raw
     rules = {
       for k, r in checkmk_rule.special_agent : k => {
         value_raw   = r.value_raw
@@ -77,5 +99,5 @@ resource "checkmk_activation" "this" {
     replace_triggered_by = [terraform_data.activation_trigger]
   }
 
-  depends_on = [checkmk_host.this, checkmk_rule.special_agent]
+  depends_on = [checkmk_host.this, checkmk_rule.special_agent, checkmk_rule.check_interval]
 }

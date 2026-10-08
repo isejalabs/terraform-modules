@@ -64,6 +64,43 @@ run "rule_follows_the_contract_when_enabled" {
   }
 }
 
+run "polling_interval_defaults_to_15_minutes_and_covers_the_host_only" {
+  command = plan
+
+  assert {
+    condition     = checkmk_rule.check_interval.ruleset == "extra_service_conf:check_interval" && checkmk_rule.check_interval.value_raw == "15.0"
+    error_message = "The host must be polled every 15 minutes by default."
+  }
+
+  assert {
+    condition     = checkmk_rule.check_interval.conditions.host_name.match_on == toset(["rustfs.fiona.example.com"]) || checkmk_rule.check_interval.conditions.host_name.match_on == tolist(["rustfs.fiona.example.com"])
+    error_message = "The interval rule must apply to the API-only host only."
+  }
+}
+
+run "polling_interval_is_configurable" {
+  command = plan
+
+  variables {
+    check_interval_minutes = 5
+  }
+
+  assert {
+    condition     = checkmk_rule.check_interval.value_raw == "5.0"
+    error_message = "check_interval_minutes must set the interval."
+  }
+}
+
+run "polling_interval_below_one_minute_is_rejected" {
+  command = plan
+
+  variables {
+    check_interval_minutes = 0
+  }
+
+  expect_failures = [var.check_interval_minutes]
+}
+
 run "rules_enabled_without_endpoint_is_rejected" {
   command = plan
 

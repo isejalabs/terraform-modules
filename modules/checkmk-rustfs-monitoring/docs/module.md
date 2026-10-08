@@ -22,6 +22,7 @@ No modules.
 | ---- | ---- |
 | checkmk_activation.this | resource |
 | checkmk_host.this | resource |
+| checkmk_rule.check_interval | resource |
 | checkmk_rule.special_agent | resource |
 | [terraform_data.activation_trigger](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) | resource |
 
@@ -29,6 +30,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_check_interval_minutes"></a> [check\_interval\_minutes](#input\_check\_interval\_minutes) | How often Checkmk fetches the data of the API-only host and checks its services, in minutes. Checkmk's default is one minute, which would mean one request per bucket every minute against the RustFS (and a warning-level RustFS event for each); the monitoring plan calls for 15 minutes. Applied to all services of the host, including the one that runs the special agent. | `number` | `15` | no |
 | <a name="input_checkmk"></a> [checkmk](#input\_checkmk) | Checkmk site URL (including the site name, no trailing slash, for example `https://monitoring.example.com/prod`) and the automation user the provider authenticates as. See the README for the least-privilege role the user needs. | <pre>object({<br/>    url      = string<br/>    username = string<br/>    secret   = string<br/>  })</pre> | n/a | yes |
 | <a name="input_endpoint"></a> [endpoint](#input\_endpoint) | Base URL of the RustFS admin/S3 endpoint the special agent queries, for example `https://fiona.home.iseja.net:9002` (no trailing slash). Required when `rules_enabled` is true. | `string` | `""` | no |
 | <a name="input_folder"></a> [folder](#input\_folder) | Path of the existing Checkmk folder the host is created in, for example `/container/pve4`. The folder is not created or managed by this module. | `string` | `"/"` | no |
