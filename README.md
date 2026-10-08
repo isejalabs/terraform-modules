@@ -4,6 +4,7 @@ Infrastructure modules to be used with Terragrunt and Terraform/OpenTofu
 ## Modules
 
 - [`checkmk-password`](modules/checkmk-password) -- Stores one field of a 1Password item as a Checkmk Password Store entry, via the community `blackmesaltd/checkmk` provider, so Checkmk rules can reference it without carrying the secret inline.
+- [`checkmk-rustfs-monitoring`](modules/checkmk-rustfs-monitoring) -- Shared Checkmk side of the RustFS quota monitoring: an API-only host, one special-agent rule per identity (gated until the plugin exists) and a safe activation (`force_foreign_changes = false`), via the community `blackmesaltd/checkmk` provider.
 - [`onepassword-item`](modules/onepassword-item) -- Generic module to create/manage a single 1Password item with an arbitrary set of sections/fields, reusable by any module that generates credentials.
 - [`rustfs-bucket-user`](modules/rustfs-bucket-user) -- Provisions a bucket, quota, least-privilege policy, and dedicated user on a RustFS-backed S3-compatible store, so each consumer gets its own bucket and its own scoped credentials instead of sharing admin credentials.
 - [`rustfs-bucket-reader`](modules/rustfs-bucket-reader) -- Provisions a dedicated read-only user whose policy allows only `s3:GetBucketQuota` on existing buckets (for capacity monitoring), and writes its credentials into 1Password.
