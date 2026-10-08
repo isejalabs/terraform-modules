@@ -2,13 +2,13 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_checkmk"></a> [checkmk](#requirement\_checkmk) | 0.0.5 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_checkmk"></a> [checkmk](#provider\_checkmk) | 0.0.5 |
 | <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
@@ -19,7 +19,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | checkmk_activation.this | resource |
 | checkmk_host.this | resource |
 | checkmk_rule.check_interval | resource |
@@ -29,7 +29,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_check_interval_minutes"></a> [check\_interval\_minutes](#input\_check\_interval\_minutes) | How often Checkmk fetches the data of the API-only host and checks its services, in minutes. Checkmk's default is one minute, which would mean one request per bucket every minute against the RustFS (and a warning-level RustFS event for each); the monitoring plan calls for 15 minutes. Applied to all services of the host, including the one that runs the special agent. | `number` | `15` | no |
 | <a name="input_checkmk"></a> [checkmk](#input\_checkmk) | Checkmk site URL (including the site name, no trailing slash, for example `https://monitoring.example.com/prod`) and the automation user the provider authenticates as. See the README for the least-privilege role the user needs. | <pre>object({<br/>    url      = string<br/>    username = string<br/>    secret   = string<br/>  })</pre> | n/a | yes |
 | <a name="input_endpoint"></a> [endpoint](#input\_endpoint) | Base URL of the RustFS admin/S3 endpoint the special agent queries, for example `https://fiona.home.iseja.net:9002` (no trailing slash). Required when `rules_enabled` is true. | `string` | `""` | no |
@@ -42,7 +42,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_host_name"></a> [host\_name](#output\_host\_name) | Name of the API-only host carrying the RustFS quota services. |
 | <a name="output_rule_descriptions"></a> [rule\_descriptions](#output\_rule\_descriptions) | Descriptions of the special-agent rules created (empty while rules\_enabled is false). |
 <!-- END_TF_DOCS -->
