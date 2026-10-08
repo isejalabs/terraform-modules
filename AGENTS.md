@@ -10,6 +10,7 @@ A monorepo of small, independent Terraform/OpenTofu modules, each living under `
 
 ## Modules
 
+- [`checkmk-password`](modules/checkmk-password) — stores one field of a 1Password item as a Checkmk Password Store entry (community `blackmesaltd/checkmk` provider, not in the OpenTofu registry, so addressed via `registry.terraform.io`).
 - [`onepassword-item`](modules/onepassword-item) — generic module to create/manage a single 1Password item with an arbitrary set of sections/fields, reusable by any module that generates credentials.
 - [`rustfs-bucket-user`](modules/rustfs-bucket-user) — provisions a bucket, quota, least-privilege policy, and dedicated user on a RustFS-backed S3-compatible store.
 - [`rustfs-bucket-reader`](modules/rustfs-bucket-reader) — provisions a dedicated read-only user whose policy allows only `s3:GetBucketQuota` on existing buckets, and stores its credentials in 1Password.
