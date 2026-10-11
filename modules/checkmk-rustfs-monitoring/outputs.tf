@@ -1,6 +1,6 @@
-output "host_name" {
-  description = "Name of the API-only host carrying the RustFS quota services."
-  value       = checkmk_host.this.host_name
+output "host_names" {
+  description = "Names of the API-only hosts carrying the RustFS quota services, keyed by identity."
+  value       = { for k, h in checkmk_host.this : k => h.host_name }
 }
 
 output "rule_descriptions" {

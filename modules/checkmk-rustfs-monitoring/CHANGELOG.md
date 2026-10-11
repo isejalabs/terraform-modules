@@ -35,9 +35,13 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Changed
 
+- **Breaking:** one API-only host per identity instead of one shared host: the variable `host_name` is replaced by `host_name_format` (a pattern with `%s` for the identity key, for example `rustfs-%s.fiona.example.com`), the polling-interval rule is created per host, and the output `host_name` is replaced by the map `host_names`. Migration: the former shared host is destroyed and one host per identity is created. ([#52](https://github.com/isejalabs/terraform-modules/issues/52))
+
 ### Removed
 
 ### Fixed
+
+- Only one identity was polled: Checkmk runs just the first matching rule of the special-agent ruleset per host, so with several identities on one host all but one stayed unpolled. ([#52](https://github.com/isejalabs/terraform-modules/issues/52))
 
 ## [0.1.0] - 2026-10-08
 

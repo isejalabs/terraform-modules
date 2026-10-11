@@ -8,13 +8,13 @@ variable "checkmk" {
   sensitive = true
 }
 
-variable "host_name" {
-  description = "Name of the API-only host that carries the RustFS quota services, for example `rustfs.fiona.home.iseja.net`. It is a dedicated host: a special-agent rule on a host with the normal Checkmk agent would replace the agent connection and silence that host's own checks."
+variable "host_name_format" {
+  description = "Pattern for the host name of each identity, with `%s` replaced by the identity key (the environment), for example `rustfs-%s.fiona.home.iseja.net`. Each identity gets its own dedicated API-only host: Checkmk runs only the first matching rule of the special-agent ruleset per host, so several identities on one host would leave all but one unpolled, and a special-agent rule on a host with the normal Checkmk agent would replace its agent connection and silence its own checks."
   type        = string
 
   validation {
-    condition     = trimspace(var.host_name) != ""
-    error_message = "host_name must not be empty."
+    condition     = can(regex("^[^%]*%s[^%]*$", var.host_name_format)) && trimspace(var.host_name_format) != ""
+    error_message = "host_name_format must contain exactly one %s and no other % characters."
   }
 }
 
@@ -30,13 +30,13 @@ variable "folder" {
 }
 
 variable "host_alias" {
-  description = "Alias of the host."
+  description = "Alias of the hosts; the identity key is appended in parentheses."
   type        = string
   default     = "RustFS bucket quotas (API only)"
 }
 
 variable "rules_enabled" {
-  description = "Whether to create the special-agent rules. Keep it `false` until the plugin that defines the ruleset `special_agents:rustfs_quota` is installed on the site: Checkmk rejects a rule for a ruleset it does not know. The host and the activation are created either way."
+  description = "Whether to create the special-agent rules. Keep it `false` until the plugin that defines the ruleset `special_agents:rustfs_quota` is installed on the site: Checkmk rejects a rule for a ruleset it does not know. The hosts and the activation are created either way."
   type        = bool
   default     = false
 }
