@@ -1,16 +1,8 @@
-# Dedicated API-only host: no IP address and no Checkmk agent, only the configured special agents.
-resource "checkmk_host" "this" {
-  host_name = var.host_name
-  folder    = var.folder
-
-  attributes = {
-    alias              = var.host_alias
-    tag_address_family = "no-ip"
-    tag_agent          = "special-agents"
-  }
-}
-
 locals {
+  # One host per identity: Checkmk runs only the first matching rule of the special-agent ruleset per host, so several
+  # identities on one host would leave all but one unpolled.
+  host_names = { for k, v in var.identities : k => format(var.host_name_format, k) }
+
   rules = var.rules_enabled ? var.identities : {}
 
   # Python-literal string values, as the Checkmk rule API expects `value_raw`. The variable validation rules out
@@ -23,7 +15,21 @@ locals {
   } }
 }
 
-# One rule per identity for the ruleset defined by the RustFS quota special agent plugin (contract v0):
+# Dedicated API-only hosts, one per identity: no IP address and no Checkmk agent, only the configured special agent.
+resource "checkmk_host" "this" {
+  for_each = local.host_names
+
+  host_name = each.value
+  folder    = var.folder
+
+  attributes = {
+    alias              = "${var.host_alias} (${each.key})"
+    tag_address_family = "no-ip"
+    tag_agent          = "special-agents"
+  }
+}
+
+# One rule per identity, each on the host of that identity, for the ruleset defined by the RustFS quota special agent plugin (contract v0):
 # endpoint, access_key, secret_key (a Password Store reference, never the secret itself) and buckets.
 resource "checkmk_rule" "special_agent" {
   for_each = local.rules
@@ -40,7 +46,7 @@ resource "checkmk_rule" "special_agent" {
   # Always set explicit conditions: the provider fails ("inconsistent result after apply") for a rule without them.
   conditions = {
     host_name = {
-      match_on = [checkmk_host.this.host_name]
+      match_on = [checkmk_host.this[each.key].host_name]
       operator = "one_of"
     }
   }
@@ -50,18 +56,20 @@ resource "checkmk_rule" "special_agent" {
 # ruleset is built into Checkmk (unlike the special-agent ruleset), so this rule exists independently of rules_enabled.
 # The value is in minutes; no service condition, so it also covers the service that runs the special agent.
 resource "checkmk_rule" "check_interval" {
+  for_each = local.host_names
+
   ruleset   = "extra_service_conf:check_interval"
   folder    = "/"
   value_raw = format("%.1f", var.check_interval_minutes)
 
   properties = {
-    description = "RustFS quota monitoring: check interval of ${var.host_name}"
+    description = "RustFS quota monitoring: check interval of ${each.value}"
     comment     = "Managed by OpenTofu -- edit terraform-modules//modules/checkmk-rustfs-monitoring and re-apply, don't hand-edit."
   }
 
   conditions = {
     host_name = {
-      match_on = [checkmk_host.this.host_name]
+      match_on = [each.value]
       operator = "one_of"
     }
   }
@@ -72,12 +80,14 @@ resource "checkmk_rule" "check_interval" {
 # resource has no instances while rules_enabled is false and every plan would then fail ("no change found").
 resource "terraform_data" "activation_trigger" {
   input = sha256(jsonencode({
-    host = {
-      name       = checkmk_host.this.host_name
-      folder     = checkmk_host.this.folder
-      attributes = checkmk_host.this.attributes
+    hosts = {
+      for k, h in checkmk_host.this : k => {
+        name       = h.host_name
+        folder     = h.folder
+        attributes = h.attributes
+      }
     }
-    check_interval = checkmk_rule.check_interval.value_raw
+    check_interval = { for k, r in checkmk_rule.check_interval : k => r.value_raw }
     rules = {
       for k, r in checkmk_rule.special_agent : k => {
         value_raw   = r.value_raw

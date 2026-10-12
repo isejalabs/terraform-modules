@@ -1,14 +1,14 @@
 # checkmk-rustfs-monitoring
 
-The shared Checkmk side of the RustFS bucket quota monitoring: one API-only host, one special-agent rule per RustFS monitoring identity, and an activation. It is the singleton counterpart to the per-environment [`checkmk-password`](../checkmk-password) module. See [ADR 0015 in isejalabs/homelab](https://github.com/isejalabs/homelab/blob/main/docs/decisions/0015-checkmk-configuration-as-code.md) for why Checkmk is configured through Terraform and for the spike results this module builds on.
+The shared Checkmk side of the RustFS bucket quota monitoring: one API-only host per RustFS monitoring identity, a special-agent rule for each, and an activation. It is the singleton counterpart to the per-environment [`checkmk-password`](../checkmk-password) module. See [ADR 0015 in isejalabs/homelab](https://github.com/isejalabs/homelab/blob/main/docs/decisions/0015-checkmk-configuration-as-code.md) for why Checkmk is configured through Terraform and for the spike results this module builds on.
 
 See the [Changelog](CHANGELOG.md) for all notable changes.
 
 ## What it creates
 
-- **An API-only host** (`tag_address_family = no-ip`, `tag_agent = special-agents`) in an existing folder. It must be a dedicated host: on a host with the normal Checkmk agent, a special-agent rule **replaces** the TCP agent connection (Checkmk generates only the special-agent program and no TCP connection), which would silence the existing checks of that host, for example the TrueNAS host itself. On the API-only host Checkmk shows "No Checkmk agent, all configured special agents" and address "No IP".
-- **One `checkmk_rule` per identity** for the ruleset `special_agents:rustfs_quota`, applying to that host only. Created only when `rules_enabled` is `true`.
-- **A polling-interval rule** (`extra_service_conf:check_interval`, `check_interval_minutes`, default 15): Checkmk fetches the data of a host and checks all its services once per check interval, one minute by default, and each run makes one request per bucket (and RustFS logs each one as a warning-level event). The rule applies to all services of the host, including the one that runs the special agent; verified in the generated Nagios configuration of a Checkmk Raw site (`check_interval 15.0`). It exists independently of `rules_enabled`, as the ruleset is built into Checkmk.
+- **One API-only host per identity** (host name from `host_name_format`, for example `rustfs-dev.fiona.example.com`; `tag_address_family = no-ip`, `tag_agent = special-agents`) in an existing folder. Checkmk runs only the **first** matching rule of the special-agent ruleset per host, so one host for several identities would poll just one of them (found on the real site: only the first identity's buckets were discovered); hence one host each. The hosts must be dedicated: on a host with the normal Checkmk agent, a special-agent rule **replaces** the TCP agent connection (Checkmk generates only the special-agent program and no TCP connection), which would silence the existing checks of that host, for example the TrueNAS host itself. On the API-only host Checkmk shows "No Checkmk agent, all configured special agents" and address "No IP".
+- **One `checkmk_rule` per identity** for the ruleset `special_agents:rustfs_quota`, applying to the host of that identity only. Created only when `rules_enabled` is `true`.
+- **A polling-interval rule** (`extra_service_conf:check_interval`, `check_interval_minutes`, default 15): Checkmk fetches the data of a host and checks all its services once per check interval, one minute by default, and each run makes one request per bucket (and RustFS logs each one as a warning-level event). The rule (one per host) applies to all services of the host, including the one that runs the special agent; verified in the generated Nagios configuration of a Checkmk Raw site (`check_interval 15.0`). It exists independently of `rules_enabled`, as the ruleset is built into Checkmk.
 - **A `checkmk_activation`** that makes the changes effective.
 
 The module does not create or manage the folder, the Password Store entries (that is `checkmk-password`), or the plugin that defines the ruleset.
@@ -38,7 +38,7 @@ module "checkmk_rustfs_monitoring" {
     secret   = var.checkmk_automation_secret
   }
 
-  host_name = "rustfs.fiona.example.com"
+  host_name_format = "rustfs-%s.fiona.example.com" # %s = identity key, so rustfs-dev.fiona.example.com
   folder    = "/container/pve4"
 
   rules_enabled = false # keep false until the plugin is installed on the site
@@ -69,11 +69,11 @@ The automation user needs the Password Store, folder, host, ruleset and activati
 
 ## Outputs
 
-`host_name` and `rule_descriptions`.
+`host_names` (map of identity key to host name) and `rule_descriptions`.
 
 ## Tests
 
-`tests/monitoring.tftest.hcl` runs offline with a mocked provider (`tofu test` in this directory): the host is API-only, no rule exists by default, the rule's `value_raw` follows the contract exactly and applies to the host only, the activation never forces foreign changes, and bad input (missing endpoint, quotes in values, no buckets, a folder without a leading slash) is rejected. The module was also applied, changed, re-planned and destroyed for real against a throwaway Checkmk Raw 2.4.0p37, including the foreign-change case above; that run is not part of the committed tests as it needs a Checkmk server. The live run found the `replace_triggered_by` problem above.
+`tests/monitoring.tftest.hcl` runs offline with a mocked provider (`tofu test` in this directory): one API-only host per identity, no rule exists by default, the rule's `value_raw` follows the contract exactly and applies to the host of its identity only, the activation never forces foreign changes, and bad input (missing endpoint, quotes in values, no buckets, a folder without a leading slash) is rejected. The module was also applied, changed, re-planned and destroyed for real against a throwaway Checkmk Raw 2.4.0p37, including the foreign-change case above; that run is not part of the committed tests as it needs a Checkmk server. The live run found the `replace_triggered_by` problem above.
 
 ## Caveats
 
