@@ -15,36 +15,30 @@ resource "rustfs_quota" "this" {
 #   status = "Enabled"
 # }
 
-# Scopes the dedicated user down to only this bucket, rather than reusing the admin credentials.
-resource "rustfs_policy" "this" {
-  name = "${var.name}-rw"
+# The dedicated user, scoped down to only this bucket (and its objects), rather than reusing the admin credentials.
+# The policy, the generated secret and the user are the shared core in rustfs-user.
+module "user" {
+  source = "../rustfs-user"
 
-  statement = [
-    {
-      effect = "Allow"
-      action = var.policy_actions
-      ressource = [
-        "arn:aws:s3:::${rustfs_bucket.this.name}",
-        "arn:aws:s3:::${rustfs_bucket.this.name}/*",
-      ]
-    },
-  ]
+  name            = var.name
+  policy_name     = "${var.name}-rw"
+  actions         = var.policy_actions
+  bucket_names    = [rustfs_bucket.this.name]
+  include_objects = true
 }
 
-resource "random_password" "user_secret" {
-  length  = 40
-  special = false
-
-  # If this is ever imported (e.g. disaster recovery, re-adopting a bucket/user that already exists on
-  # RustFS), don't let a mismatch between its actual original parameters and the ones above force a
-  # replacement -- that would silently regenerate a real, already-in-use secret.
-  lifecycle {
-    ignore_changes = [length, special]
-  }
+# The user resources used to live in this module directly; keep the live ones (no replacement of a credential in use).
+moved {
+  from = rustfs_policy.this
+  to   = module.user.rustfs_policy.this
 }
 
-resource "rustfs_user" "this" {
-  access_key = var.name
-  secret_key = random_password.user_secret.result
-  policy     = rustfs_policy.this.name
+moved {
+  from = random_password.user_secret
+  to   = module.user.random_password.user_secret
+}
+
+moved {
+  from = rustfs_user.this
+  to   = module.user.rustfs_user.this
 }

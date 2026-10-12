@@ -7,12 +7,12 @@ entirely outside this module's control. Treat this as the runbook until [#21](ht
 
 ## `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (the RustFS user)
 
-Safe to rotate in a single `apply`. Replacing `random_password.user_secret` forces `rustfs_user` to be
+Safe to rotate in a single `apply`. Replacing `random_password.user_secret` (in `rustfs-user`) forces `rustfs_user` to be
 replaced too (`secret_key` is immutable on that resource), which then flows straight through to an in-place
 update of the `AWS_SECRET_ACCESS_KEY` field on the 1Password item -- all in one plan, no manual steps.
 
 ```sh
-tofu apply -replace='module.bucket_user.random_password.user_secret'
+tofu apply -replace='module.bucket_user.module.user.random_password.user_secret'
 ```
 
 The bucket, policy, and quota are untouched; only the user's identity and its 1Password fields change.

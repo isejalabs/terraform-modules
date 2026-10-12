@@ -23,17 +23,17 @@ run "policy_is_quota_read_on_bucket_arns_only" {
   command = plan
 
   assert {
-    condition     = length(rustfs_policy.this.statement) == 1
-    error_message = "Policy must have exactly one statement."
+    condition     = length(module.user.granted_actions) == 1
+    error_message = "Policy must allow exactly one action."
   }
 
   assert {
-    condition     = rustfs_policy.this.statement[0].effect == "Allow" && rustfs_policy.this.statement[0].action == toset(["s3:GetBucketQuota"])
+    condition     = module.user.granted_actions == toset(["s3:GetBucketQuota"])
     error_message = "Policy must only allow s3:GetBucketQuota."
   }
 
   assert {
-    condition     = rustfs_policy.this.statement[0].ressource == toset(["arn:aws:s3:::dev-longhorn-backup", "arn:aws:s3:::prod-kopiur-backup"])
+    condition     = module.user.granted_resources == toset(["arn:aws:s3:::dev-longhorn-backup", "arn:aws:s3:::prod-kopiur-backup"])
     error_message = "Policy must list exactly the given buckets with no object ARNs (/*)."
   }
 }

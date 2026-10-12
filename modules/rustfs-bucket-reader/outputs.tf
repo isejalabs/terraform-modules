@@ -3,7 +3,7 @@
 
 output "policy_name" {
   description = "Name of the read-only quota policy attached to the user."
-  value       = rustfs_policy.this.name
+  value       = module.user.policy_name
 }
 
 output "item_uuid" {

@@ -4,9 +4,11 @@ Provisions, on a RustFS-backed S3-compatible store:
 
 - a bucket (`rustfs_bucket`),
 - a quota on that bucket (`rustfs_quota`, defaults to 10 GiB),
-- a policy scoped to only that bucket (`rustfs_policy`, `GetObject`/`PutObject`/`DeleteObject`/`ListBucket`
-  on `arn:aws:s3:::<bucket>` and `arn:aws:s3:::<bucket>/*` by default), and
-- a dedicated user for that bucket (`rustfs_user`) with a generated secret key, attached to the policy above.
+- a policy scoped to only that bucket (`GetObject`/`PutObject`/`DeleteObject`/`ListBucket` on `arn:aws:s3:::<bucket>`
+  and `arn:aws:s3:::<bucket>/*` by default), and
+- a dedicated user for that bucket with a generated secret key, attached to the policy above.
+
+The policy, the secret and the user come from the shared [`rustfs-user`](../rustfs-user) module; this module adds the bucket and its quota.
 
 Each consumer of RustFS storage gets its own bucket and its own least-privilege user, instead of every app
 sharing one set of admin credentials.
@@ -69,11 +71,6 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
   provider's `main` branch but isn't in any published release yet (latest is `v0.0.8`). The variable is in
   place so callers don't need a breaking change once a release ships it, but no `rustfs_bucket_versioning`
   resource is created either way for now.
-- No automated credential rotation / lifetime for the generated user secret (e.g. a `time_rotating` keeper,
-  or writing straight into a secrets manager via its own Terraform provider instead of a manual
-  `terraform output` copy-paste) -- see [#21](https://github.com/isejalabs/terraform-modules/issues/21).
-  Manual rotation (replacing `random_password.user_secret` via `-replace`) is safe and documented in
-  [`rustfs-kopiur-backup`'s docs/rotation.md](../rustfs-kopiur-backup/docs/rotation.md).
 - Renaming (changing `var.name` on an existing deployment) is **not safe as a single `apply`**: `rustfs_bucket`
   and `rustfs_user` both force a destroy-then-create replacement. If the bucket isn't empty, the bucket destroy
   fails -- but not before the user destroy (unrelated in the dependency graph) has already succeeded, briefly
@@ -86,25 +83,7 @@ bucket user -- e.g. to hand to a backup tool or write into your own secrets stor
   `ServiceUnavailable: authoritative bucket usage is not available yet` -- RustFS's usage-stats subsystem
   needs a little time (observed up to ~1-2 minutes) to catch up for a brand-new bucket. Not a bug; just
   retry after a short wait.
-- **If the RustFS user is deleted externally, `plan`/`apply` doesn't recover automatically -- it hard-fails.**
-  Unlike `onepassword_item` (which treats an externally-deleted item as drift and just plans a recreate),
-  `rustfs_user`'s `Read` propagates the raw `NoSuchResource` API error instead of clearing the resource from
-  state, blocking the whole plan. Remediation: `terraform state rm <address>` for just that resource, then a
-  normal `apply` recreates it -- using the same secret already in `random_password.user_secret` state, so
-  the credential itself doesn't change. Verified end-to-end against a real `dev` user.
-- **Disaster recovery (Terraform state lost, bucket/user still exist on RustFS): `rustfs_user.secret_key`
-  cannot be recovered via plain `terraform import`.** The provider's `Read` never actually fetches it from
-  RustFS (the admin API doesn't expose it) -- it only preserves whatever's already in state, which after a
-  fresh import is empty. Since `secret_key` forces replacement on any change, importing `rustfs_user` as-is
-  will always want to replace it on the next `apply` (generating a new secret), even if the value you're
-  about to set happens to be identical to the real one. If you have the real secret from another surviving
-  source (e.g. the corresponding 1Password item, or a backed-up Terraform state), the only way to adopt it
-  cleanly is manual state surgery: `terraform state pull`, patch the `rustfs_user` instance's `secret_key`
-  attribute (and bump `serial`) in the JSON, then `terraform state push`. `random_password.user_secret` (and
-  `random_password.kopia_password` in `rustfs-kopiur-backup`) import normally by contrast -- both have
-  `lifecycle { ignore_changes = [length, special] }` so an imported password's original generation
-  parameters don't force a replacement either. Verified end-to-end via a full from-scratch import against a
-  real `dev` bucket/user/item (against a throwaway local state, never applied).
+- The limitations of the RustFS user itself (no automated rotation, an externally deleted user hard-fails `plan`, `secret_key` can't be recovered via plain `terraform import`) are documented once, in [`rustfs-user`'s Caveats](../rustfs-user/README.md#caveats). The user resources are at `module.user` in this module; `moved` blocks keep the state of deployments that predate the extraction, so applying a version with `rustfs-user` shows only moves and no replacement. Manual rotation of this module's user is described in [`rustfs-kopiur-backup`'s docs/rotation.md](../rustfs-kopiur-backup/docs/rotation.md).
 
 ## Feedback
 

@@ -35,6 +35,8 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Changed
 
+- Follows `rustfs-bucket-user`, which now builds on the shared `rustfs-user` module: the state of existing deployments moves (`moved` blocks, no replacement); the address of the user secret for `-replace` is now `module.bucket_user.module.user.random_password.user_secret`. ([#37](https://github.com/isejalabs/terraform-modules/issues/37))
+
 ### Removed
 
 ### Fixed

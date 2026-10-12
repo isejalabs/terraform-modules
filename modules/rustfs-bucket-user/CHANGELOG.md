@@ -35,6 +35,8 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Changed
 
+- The policy, the secret and the user now come from the new shared `rustfs-user` module. Interface, resource names and policy unchanged; `moved` blocks keep the state of existing deployments, so a plan shows only moves and no replacement (verified against a live `dev` deployment through `rustfs-kopiur-backup`). The address of the user secret (for `-replace`) is now `module.user.random_password.user_secret`. ([#37](https://github.com/isejalabs/terraform-modules/issues/37))
+
 ### Removed
 
 ### Fixed
