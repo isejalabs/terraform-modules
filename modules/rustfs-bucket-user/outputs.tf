@@ -3,14 +3,14 @@ output "bucket_name" {
 }
 
 output "policy_name" {
-  value = rustfs_policy.this.name
+  value = module.user.policy_name
 }
 
 output "access_key" {
-  value = rustfs_user.this.access_key
+  value = module.user.access_key
 }
 
 output "secret_key" {
-  value     = rustfs_user.this.secret_key
+  value     = module.user.secret_key
   sensitive = true
 }

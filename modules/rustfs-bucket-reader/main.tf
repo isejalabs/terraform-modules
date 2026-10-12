@@ -1,35 +1,28 @@
 # Read-only monitoring identity: may query quota and usage of the listed buckets and nothing else. Deliberately
 # no s3:ListBucket, no object ARN ("/*"), no quota-setting actions and no admin:* actions -- see README.
-resource "rustfs_policy" "this" {
-  name = "${var.name}-ro"
+module "user" {
+  source = "../rustfs-user"
 
-  statement = [
-    {
-      effect = "Allow"
-      action = ["s3:GetBucketQuota"]
-      ressource = [
-        for bucket in var.bucket_names : "arn:aws:s3:::${bucket}"
-      ]
-    },
-  ]
+  name         = var.name
+  policy_name  = "${var.name}-ro"
+  actions      = ["s3:GetBucketQuota"]
+  bucket_names = var.bucket_names
 }
 
-resource "random_password" "user_secret" {
-  length  = 40
-  special = false
-
-  # If this is ever imported (e.g. disaster recovery, re-adopting a user that already exists on RustFS), don't
-  # let a mismatch between its actual original parameters and the ones above force a replacement -- that would
-  # silently regenerate a real, already-in-use secret.
-  lifecycle {
-    ignore_changes = [length, special]
-  }
+# The user resources used to live in this module directly; keep the live ones (no replacement of a credential in use).
+moved {
+  from = rustfs_policy.this
+  to   = module.user.rustfs_policy.this
 }
 
-resource "rustfs_user" "this" {
-  access_key = var.name
-  secret_key = random_password.user_secret.result
-  policy     = rustfs_policy.this.name
+moved {
+  from = random_password.user_secret
+  to   = module.user.random_password.user_secret
+}
+
+moved {
+  from = rustfs_user.this
+  to   = module.user.rustfs_user.this
 }
 
 module "secret" {
@@ -43,8 +36,8 @@ module "secret" {
     {
       label = "rustfs"
       fields = [
-        { label = "ACCESS_KEY", value = rustfs_user.this.access_key, type = "CONCEALED" },
-        { label = "SECRET_KEY", value = rustfs_user.this.secret_key, type = "CONCEALED" },
+        { label = "ACCESS_KEY", value = module.user.access_key, type = "CONCEALED" },
+        { label = "SECRET_KEY", value = module.user.secret_key, type = "CONCEALED" },
       ]
     },
   ]
