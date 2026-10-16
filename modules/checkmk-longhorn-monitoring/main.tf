@@ -1,7 +1,11 @@
 locals {
-  # One host per environment: Checkmk runs only the first matching rule of the special-agent ruleset per host, so
-  # several environments on one host would leave all but one polled.
-  host_names = { for k, v in var.environments : k => format(var.host_name_format, k) }
+  # One host per environment, named after the real hostname of that environment's Longhorn deployment (the
+  # endpoint itself, scheme stripped) -- unlike checkmk-rustfs-monitoring, there is no shared endpoint across
+  # environments here that would need a synthetic per-identity name: each environment's Longhorn already has its
+  # own real, resolvable hostname, so the Checkmk host name matches the thing you'd actually go check. Checkmk
+  # runs only the first matching rule of the special-agent ruleset per host, so several environments on one host
+  # would leave all but one polled -- hence still one host each.
+  host_names = { for k, v in var.environments : k => regex("^https?://([^/]+)", v.endpoint)[0] }
 
   rules = var.rules_enabled ? var.environments : {}
 
@@ -12,7 +16,12 @@ locals {
   } }
 }
 
-# Dedicated API-only hosts, one per environment: no IP address and no Checkmk agent, only the configured special agent.
+# Dedicated hosts, one per environment, with no Checkmk agent connection (only the configured special agent) --
+# but, unlike checkmk-rustfs-monitoring's synthetic identities, resolved to a real IPv4 address rather than
+# no-ip: the host name is the real, DNS-resolvable Longhorn hostname, so there is no synthetic-identity reason
+# to withhold address resolution. This lets other active checks (HTTP, SSL certificate, ICMP) be added to the
+# same host later without needing an explicit "connect to" override, since Checkmk can resolve the host's own
+# primary address itself.
 resource "checkmk_host" "this" {
   for_each = local.host_names
 
@@ -21,7 +30,7 @@ resource "checkmk_host" "this" {
 
   attributes = {
     alias              = "${var.host_alias} (${each.key})"
-    tag_address_family = "no-ip"
+    tag_address_family = "ip-v4"
     tag_agent          = "special-agents"
   }
 }

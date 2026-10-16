@@ -8,16 +8,6 @@ variable "checkmk" {
   sensitive = true
 }
 
-variable "host_name_format" {
-  description = "Pattern for the host name of each environment, with `%s` replaced by the environment key, for example `longhorn-%s.fiona.home.iseja.net`. Each environment gets its own dedicated API-only host: Checkmk runs only the first matching rule of the special-agent ruleset per host, so several environments on one host would leave all but one polled, and a special-agent rule on a host with the normal Checkmk agent would replace its agent connection and silence its own checks."
-  type        = string
-
-  validation {
-    condition     = can(regex("^[^%]*%s[^%]*$", var.host_name_format)) && trimspace(var.host_name_format) != ""
-    error_message = "host_name_format must contain exactly one %s and no other % characters."
-  }
-}
-
 variable "folder" {
   description = "Path of the existing Checkmk folder the hosts are created in, for example `/container/pve4`. The folder is not created or managed by this module."
   type        = string
@@ -42,7 +32,7 @@ variable "rules_enabled" {
 }
 
 variable "environments" {
-  description = "Environments to create a Longhorn capacity monitoring host and rule for, keyed by a short name, each with the base URL of that environment's Longhorn deployment (its existing UI route, which proxies the unauthenticated API through, for example `http://longhorn.dev.iseja.net`). Quotes and backslashes are not allowed in the endpoint: it is written into a Python literal."
+  description = "Environments to create a Longhorn capacity monitoring host and rule for, keyed by a short name, each with the base URL of that environment's Longhorn deployment (its existing UI route, which proxies the unauthenticated API through, for example `http://longhorn.dev.example.com`). Quotes and backslashes are not allowed in the endpoint: it is written into a Python literal."
   type = map(object({
     endpoint = string
   }))

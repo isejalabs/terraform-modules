@@ -39,6 +39,22 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Fixed
 
+## [0.2.0] - 2026-10-16
+
+### Changed
+
+- **Breaking:** the Checkmk host name is now derived from each environment's `endpoint` (the hostname it
+  already resolves to, scheme stripped) instead of a separate `host_name_format` pattern. Unlike
+  `checkmk-rustfs-monitoring`, there is no shared endpoint across environments here needing a synthetic name --
+  each environment's Longhorn already has its own real hostname. The variable `host_name_format` is removed.
+  Migration: applying this version renames (destroys and recreates) every existing host.
+  ([#60](https://github.com/isejalabs/terraform-modules/issues/60))
+- **Breaking:** `tag_address_family` changed from `no-ip` to `ip-v4`. The synthetic-identity reason for
+  withholding address resolution no longer applies now that the host name is the real, DNS-resolvable Longhorn
+  hostname; resolving a real IPv4 address lets other active checks (HTTP, SSL certificate, ICMP) be added to
+  the same host later without an explicit "connect to" override. Bundled into the same release as the host
+  rename above, which already replaces every host, so this doesn't add an extra apply step.
+
 ## [0.1.0] - 2026-10-16
 
 ### Added
