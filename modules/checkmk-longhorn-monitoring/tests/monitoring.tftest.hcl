@@ -1,12 +1,12 @@
-# Offline test (no Checkmk needed): the host is API-only, rules exist only when enabled and carry the agreed contract,
-# the activation never forces foreign changes, and bad input is rejected. Run: tofu test (from this directory)
+# Offline test (no Checkmk needed): the host is API-only, named after the real endpoint hostname, rules exist only
+# when enabled and carry the agreed contract, the activation never forces foreign changes, and bad input is
+# rejected. Run: tofu test (from this directory)
 
 mock_provider "checkmk" {}
 
 variables {
-  checkmk          = { url = "https://checkmk.example.com/prod", username = "terraform", secret = "automation-secret" }
-  host_name_format = "longhorn-%s.fiona.example.com"
-  folder           = "/container/pve4"
+  checkmk = { url = "https://checkmk.example.com/prod", username = "terraform", secret = "automation-secret" }
+  folder  = "/container/pve4"
   environments = {
     dev = { endpoint = "http://longhorn.dev.example.com" }
     qa  = { endpoint = "http://longhorn.qa.example.com" }
@@ -22,8 +22,8 @@ run "host_is_api_only_and_no_rules_by_default" {
   }
 
   assert {
-    condition     = checkmk_host.this["dev"].host_name == "longhorn-dev.fiona.example.com" && checkmk_host.this["qa"].host_name == "longhorn-qa.fiona.example.com" && checkmk_host.this["dev"].folder == "/container/pve4"
-    error_message = "There must be one host per environment, named by the pattern, in the given folder."
+    condition     = checkmk_host.this["dev"].host_name == "longhorn.dev.example.com" && checkmk_host.this["qa"].host_name == "longhorn.qa.example.com" && checkmk_host.this["dev"].folder == "/container/pve4"
+    error_message = "The host name must be the real endpoint hostname (scheme stripped), not a synthetic pattern, in the given folder."
   }
 
   assert {
@@ -39,6 +39,21 @@ run "host_is_api_only_and_no_rules_by_default" {
   assert {
     condition     = checkmk_activation.this.force_foreign_changes == false
     error_message = "The activation must never force changes made by other users."
+  }
+}
+
+run "host_name_strips_port_too" {
+  command = plan
+
+  variables {
+    environments = {
+      dev = { endpoint = "http://longhorn.dev.example.com:8080" }
+    }
+  }
+
+  assert {
+    condition     = checkmk_host.this["dev"].host_name == "longhorn.dev.example.com:8080"
+    error_message = "The host name is the full authority component (host[:port]) of the endpoint."
   }
 }
 
@@ -60,12 +75,12 @@ run "rule_follows_the_contract_when_enabled" {
   }
 
   assert {
-    condition     = length(checkmk_rule.special_agent) == 2 && checkmk_rule.special_agent["qa"].conditions.host_name.match_on[0] == "longhorn-qa.fiona.example.com" && strcontains(checkmk_rule.special_agent["qa"].value_raw, "longhorn.qa.example.com")
+    condition     = length(checkmk_rule.special_agent) == 2 && checkmk_rule.special_agent["qa"].conditions.host_name.match_on[0] == "longhorn.qa.example.com" && strcontains(checkmk_rule.special_agent["qa"].value_raw, "longhorn.qa.example.com")
     error_message = "Each environment needs its own rule on its own host with its own endpoint."
   }
 
   assert {
-    condition     = checkmk_rule.special_agent["dev"].conditions.host_name.match_on == toset(["longhorn-dev.fiona.example.com"]) || checkmk_rule.special_agent["dev"].conditions.host_name.match_on == tolist(["longhorn-dev.fiona.example.com"])
+    condition     = checkmk_rule.special_agent["dev"].conditions.host_name.match_on == toset(["longhorn.dev.example.com"]) || checkmk_rule.special_agent["dev"].conditions.host_name.match_on == tolist(["longhorn.dev.example.com"])
     error_message = "The rule must apply to the host of its environment only."
   }
 }
@@ -79,7 +94,7 @@ run "polling_interval_defaults_to_5_minutes_and_covers_the_host_only" {
   }
 
   assert {
-    condition     = checkmk_rule.check_interval["dev"].conditions.host_name.match_on == toset(["longhorn-dev.fiona.example.com"]) || checkmk_rule.check_interval["dev"].conditions.host_name.match_on == tolist(["longhorn-dev.fiona.example.com"])
+    condition     = checkmk_rule.check_interval["dev"].conditions.host_name.match_on == toset(["longhorn.dev.example.com"]) || checkmk_rule.check_interval["dev"].conditions.host_name.match_on == tolist(["longhorn.dev.example.com"])
     error_message = "The interval rule must apply to the host of its environment only."
   }
 }
@@ -129,16 +144,6 @@ run "endpoint_with_path_is_rejected" {
   }
 
   expect_failures = [var.environments]
-}
-
-run "host_name_format_without_placeholder_is_rejected" {
-  command = plan
-
-  variables {
-    host_name_format = "longhorn.fiona.example.com"
-  }
-
-  expect_failures = [var.host_name_format]
 }
 
 run "folder_without_leading_slash_is_rejected" {

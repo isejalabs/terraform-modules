@@ -11,9 +11,13 @@ See the [Changelog](CHANGELOG.md) for all notable changes.
 
 ## What it creates
 
-- **One API-only host per environment** (host name from `host_name_format`, for example
-  `longhorn-dev.fiona.example.com`; `tag_address_family = no-ip`, `tag_agent = special-agents`) in an existing
-  folder. Checkmk runs only the **first** matching rule of the special-agent ruleset per host, so one host for
+- **One API-only host per environment**, named after the real hostname of that environment's Longhorn
+  deployment (the `endpoint`'s own hostname, scheme stripped -- for example `environments.dev.endpoint =
+  "http://dev-longhorn.dev.iseja.net"` gives a host named `dev-longhorn.dev.iseja.net`; `tag_address_family =
+  no-ip`, `tag_agent = special-agents`) in an existing folder. Unlike `checkmk-rustfs-monitoring`, there is no
+  shared endpoint across environments here that would need a synthetic per-environment name: each environment
+  already has its own real, resolvable hostname, so the Checkmk host name matches the thing you'd actually go
+  check. Checkmk runs only the **first** matching rule of the special-agent ruleset per host, so one host for
   several environments would poll just one of them; hence one host each. The hosts must be dedicated: on a host
   with the normal Checkmk agent, a special-agent rule **replaces** the TCP agent connection, silencing the
   existing checks of that host.
@@ -51,8 +55,7 @@ module "checkmk_longhorn_monitoring" {
     secret   = var.checkmk_automation_secret
   }
 
-  host_name_format = "longhorn-%s.fiona.example.com" # %s = environment key, so longhorn-dev.fiona.example.com
-  folder            = "/container/pve4"
+  folder = "/container/pve4"
 
   rules_enabled = false # keep false until the plugin is installed on the site
   environments = {

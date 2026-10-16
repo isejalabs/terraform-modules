@@ -1,7 +1,11 @@
 locals {
-  # One host per environment: Checkmk runs only the first matching rule of the special-agent ruleset per host, so
-  # several environments on one host would leave all but one polled.
-  host_names = { for k, v in var.environments : k => format(var.host_name_format, k) }
+  # One host per environment, named after the real hostname of that environment's Longhorn deployment (the
+  # endpoint itself, scheme stripped) -- unlike checkmk-rustfs-monitoring, there is no shared endpoint across
+  # environments here that would need a synthetic per-identity name: each environment's Longhorn already has its
+  # own real, resolvable hostname, so the Checkmk host name matches the thing you'd actually go check. Checkmk
+  # runs only the first matching rule of the special-agent ruleset per host, so several environments on one host
+  # would leave all but one polled -- hence still one host each.
+  host_names = { for k, v in var.environments : k => regex("^https?://([^/]+)", v.endpoint)[0] }
 
   rules = var.rules_enabled ? var.environments : {}
 

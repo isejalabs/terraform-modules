@@ -39,6 +39,17 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Fixed
 
+## [0.2.0] - 2026-10-16
+
+### Changed
+
+- **Breaking:** the Checkmk host name is now derived from each environment's `endpoint` (the hostname it
+  already resolves to, scheme stripped) instead of a separate `host_name_format` pattern. Unlike
+  `checkmk-rustfs-monitoring`, there is no shared endpoint across environments here needing a synthetic name --
+  each environment's Longhorn already has its own real hostname. The variable `host_name_format` is removed.
+  Migration: applying this version renames (destroys and recreates) every existing host.
+  ([#60](https://github.com/isejalabs/terraform-modules/issues/60))
+
 ## [0.1.0] - 2026-10-16
 
 ### Added
