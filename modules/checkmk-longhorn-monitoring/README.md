@@ -13,7 +13,7 @@ See the [Changelog](CHANGELOG.md) for all notable changes.
 
 - **One API-only host per environment**, named after the real hostname of that environment's Longhorn
   deployment (the `endpoint`'s own hostname, scheme stripped -- for example `environments.dev.endpoint =
-  "http://dev-longhorn.dev.iseja.net"` gives a host named `dev-longhorn.dev.iseja.net`; `tag_address_family =
+  "http://dev-longhorn.dev.example.com"` gives a host named `dev-longhorn.dev.example.com`; `tag_address_family =
   no-ip`, `tag_agent = special-agents`) in an existing folder. Unlike `checkmk-rustfs-monitoring`, there is no
   shared endpoint across environments here that would need a synthetic per-environment name: each environment
   already has its own real, resolvable hostname, so the Checkmk host name matches the thing you'd actually go
@@ -38,7 +38,7 @@ writes as the rule's `value_raw`:
 
 | Parameter | Value |
 | --- | --- |
-| `endpoint` | the environment's Longhorn base URL, for example `http://longhorn.dev.iseja.net` (its existing UI route, which proxies the unauthenticated `/v1/*` API through) |
+| `endpoint` | the environment's Longhorn base URL, for example `http://longhorn.dev.example.com` (its existing UI route, which proxies the unauthenticated `/v1/*` API through) |
 
 Unlike `checkmk-rustfs-monitoring`, there is no identity, access key or Password Store reference: the Longhorn
 API trusts the network it's reachable on, the same way opening the dashboard in a browser does.
@@ -59,8 +59,8 @@ module "checkmk_longhorn_monitoring" {
 
   rules_enabled = false # keep false until the plugin is installed on the site
   environments = {
-    dev = { endpoint = "http://longhorn.dev.iseja.net" }
-    qa  = { endpoint = "http://longhorn.qa.iseja.net" }
+    dev = { endpoint = "http://longhorn.dev.example.com" }
+    qa  = { endpoint = "http://longhorn.qa.example.com" }
   }
 }
 ```

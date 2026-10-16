@@ -32,7 +32,7 @@ variable "rules_enabled" {
 }
 
 variable "environments" {
-  description = "Environments to create a Longhorn capacity monitoring host and rule for, keyed by a short name, each with the base URL of that environment's Longhorn deployment (its existing UI route, which proxies the unauthenticated API through, for example `http://longhorn.dev.iseja.net`). Quotes and backslashes are not allowed in the endpoint: it is written into a Python literal."
+  description = "Environments to create a Longhorn capacity monitoring host and rule for, keyed by a short name, each with the base URL of that environment's Longhorn deployment (its existing UI route, which proxies the unauthenticated API through, for example `http://longhorn.dev.example.com`). Quotes and backslashes are not allowed in the endpoint: it is written into a Python literal."
   type = map(object({
     endpoint = string
   }))
