@@ -49,7 +49,7 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
   each environment's Longhorn already has its own real hostname. The variable `host_name_format` is removed.
   Migration: applying this version renames (destroys and recreates) every existing host.
   ([#60](https://github.com/isejalabs/terraform-modules/issues/60))
-- **Breaking:** `tag_address_family` changed from `no-ip` to `ip-v4`. The synthetic-identity reason for
+- **Breaking:** `tag_address_family` changed from `no-ip` to `ip-v4-only`. The synthetic-identity reason for
   withholding address resolution no longer applies now that the host name is the real, DNS-resolvable Longhorn
   hostname; resolving a real IPv4 address lets other active checks (HTTP, SSL certificate, ICMP) be added to
   the same host later without an explicit "connect to" override. Bundled into the same release as the host

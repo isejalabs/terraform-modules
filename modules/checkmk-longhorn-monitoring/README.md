@@ -15,7 +15,7 @@ See the [Changelog](CHANGELOG.md) for all notable changes.
 - **One host per environment**, named after the real hostname of that environment's Longhorn deployment (the
   `endpoint`'s own hostname, scheme stripped -- for example `environments.dev.endpoint =
   "http://dev-longhorn.dev.example.com"` gives a host named `dev-longhorn.dev.example.com`;
-  `tag_address_family = ip-v4`, `tag_agent = special-agents`) in an existing folder. Unlike
+  `tag_address_family = ip-v4-only`, `tag_agent = special-agents`) in an existing folder. Unlike
   `checkmk-rustfs-monitoring`'s synthetic, no-ip identities, this host resolves a real IPv4 address: the host
   name is the real, DNS-resolvable Longhorn hostname, so there's no synthetic-identity reason to withhold
   address resolution, and other active checks (HTTP, SSL certificate, ICMP) can be added to the same host later
