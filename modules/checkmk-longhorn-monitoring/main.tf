@@ -30,7 +30,7 @@ resource "checkmk_host" "this" {
 
   attributes = {
     alias              = "${var.host_alias} (${each.key})"
-    tag_address_family = "ip-v4"
+    tag_address_family = "ip-v4-only"
     tag_agent          = "special-agents"
   }
 }

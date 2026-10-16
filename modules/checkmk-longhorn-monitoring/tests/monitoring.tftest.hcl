@@ -17,7 +17,7 @@ run "host_has_no_agent_but_resolves_a_real_address" {
   command = plan
 
   assert {
-    condition     = alltrue([for h in checkmk_host.this : h.attributes["tag_agent"] == "special-agents" && h.attributes["tag_address_family"] == "ip-v4"])
+    condition     = alltrue([for h in checkmk_host.this : h.attributes["tag_agent"] == "special-agents" && h.attributes["tag_address_family"] == "ip-v4-only"])
     error_message = "Every host must have no Checkmk agent and resolve a real IPv4 address (not no-ip): the host name is a real, resolvable hostname, so other active checks (HTTP, SSL, ICMP) can be added without an explicit target override."
   }
 
