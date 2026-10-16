@@ -1,7 +1,8 @@
 # checkmk-longhorn-monitoring
 
-The shared Checkmk side of the Longhorn disk capacity monitoring: one API-only host per environment, a
-special-agent rule for each, and an activation. Structurally the singleton counterpart of
+The shared Checkmk side of the Longhorn disk capacity monitoring: one host per environment (no Checkmk agent
+connection, but IPv4-resolved), a special-agent rule for each, and an activation. Structurally the singleton
+counterpart of
 [`checkmk-rustfs-monitoring`](../checkmk-rustfs-monitoring), simplified because the Longhorn API has no
 authentication of its own (no identity, no Password Store reference). See
 [ADR 0015 in isejalabs/homelab](https://github.com/isejalabs/homelab/blob/main/docs/decisions/0015-checkmk-configuration-as-code.md)
@@ -11,16 +12,20 @@ See the [Changelog](CHANGELOG.md) for all notable changes.
 
 ## What it creates
 
-- **One API-only host per environment**, named after the real hostname of that environment's Longhorn
-  deployment (the `endpoint`'s own hostname, scheme stripped -- for example `environments.dev.endpoint =
-  "http://dev-longhorn.dev.example.com"` gives a host named `dev-longhorn.dev.example.com`; `tag_address_family =
-  no-ip`, `tag_agent = special-agents`) in an existing folder. Unlike `checkmk-rustfs-monitoring`, there is no
-  shared endpoint across environments here that would need a synthetic per-environment name: each environment
-  already has its own real, resolvable hostname, so the Checkmk host name matches the thing you'd actually go
-  check. Checkmk runs only the **first** matching rule of the special-agent ruleset per host, so one host for
-  several environments would poll just one of them; hence one host each. The hosts must be dedicated: on a host
-  with the normal Checkmk agent, a special-agent rule **replaces** the TCP agent connection, silencing the
-  existing checks of that host.
+- **One host per environment**, named after the real hostname of that environment's Longhorn deployment (the
+  `endpoint`'s own hostname, scheme stripped -- for example `environments.dev.endpoint =
+  "http://dev-longhorn.dev.example.com"` gives a host named `dev-longhorn.dev.example.com`;
+  `tag_address_family = ip-v4`, `tag_agent = special-agents`) in an existing folder. Unlike
+  `checkmk-rustfs-monitoring`'s synthetic, no-ip identities, this host resolves a real IPv4 address: the host
+  name is the real, DNS-resolvable Longhorn hostname, so there's no synthetic-identity reason to withhold
+  address resolution, and other active checks (HTTP, SSL certificate, ICMP) can be added to the same host later
+  without an explicit "connect to" override. Unlike `checkmk-rustfs-monitoring`, there is no shared endpoint
+  across environments here that would need a synthetic per-environment name: each environment already has its
+  own real, resolvable hostname, so the Checkmk host name matches the thing you'd actually go check. Checkmk
+  runs only the **first** matching rule of the special-agent ruleset per host, so one host for several
+  environments would poll just one of them; hence one host each. The hosts must still have no Checkmk agent
+  connection: on a host with the normal Checkmk agent, a special-agent rule **replaces** the TCP agent
+  connection, silencing the existing checks of that host.
 - **One `checkmk_rule` per environment** for the ruleset `special_agents:longhorn_capacity`, applying to the
   host of that environment only. Created only when `rules_enabled` is `true`.
 - **A polling-interval rule** (`extra_service_conf:check_interval`, `check_interval_minutes`, default 5,
@@ -96,13 +101,11 @@ permissions) is enough, minus the Password Store permissions this module never u
 
 ## Tests
 
-`tests/monitoring.tftest.hcl` runs offline with a mocked provider (`tofu test` in this directory): one
-API-only host per environment, no rule exists by default, the rule's `value_raw` follows the contract exactly
-(endpoint only) and applies to the host of its environment only, the activation never forces foreign changes,
-and bad input (quotes in the endpoint, a path in the endpoint, a folder without a leading slash) is rejected.
-Not yet applied for real against a live Checkmk site (see `checkmk-rustfs-monitoring`'s README for what that
-verification looks like; this module should behave identically, being the same resource shapes with one fewer
-field).
+`tests/monitoring.tftest.hcl` runs offline with a mocked provider (`tofu test` in this directory): one host
+per environment with no Checkmk agent connection but a resolved IPv4 address, no rule exists by default, the
+rule's `value_raw` follows the contract exactly (endpoint only) and applies to the host of its environment
+only, the activation never forces foreign changes, and bad input (quotes in the endpoint, a path in the
+endpoint, a folder without a leading slash) is rejected.
 
 ## Caveats
 

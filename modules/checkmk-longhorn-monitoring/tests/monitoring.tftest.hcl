@@ -1,6 +1,6 @@
-# Offline test (no Checkmk needed): the host is API-only, named after the real endpoint hostname, rules exist only
-# when enabled and carry the agreed contract, the activation never forces foreign changes, and bad input is
-# rejected. Run: tofu test (from this directory)
+# Offline test (no Checkmk needed): the host has no Checkmk agent connection but is IPv4-resolved (not no-ip) and
+# named after the real endpoint hostname, rules exist only when enabled and carry the agreed contract, the
+# activation never forces foreign changes, and bad input is rejected. Run: tofu test (from this directory)
 
 mock_provider "checkmk" {}
 
@@ -13,12 +13,12 @@ variables {
   }
 }
 
-run "host_is_api_only_and_no_rules_by_default" {
+run "host_has_no_agent_but_resolves_a_real_address" {
   command = plan
 
   assert {
-    condition     = alltrue([for h in checkmk_host.this : h.attributes["tag_agent"] == "special-agents" && h.attributes["tag_address_family"] == "no-ip"])
-    error_message = "Every host must be API-only: no IP address and no Checkmk agent."
+    condition     = alltrue([for h in checkmk_host.this : h.attributes["tag_agent"] == "special-agents" && h.attributes["tag_address_family"] == "ip-v4"])
+    error_message = "Every host must have no Checkmk agent and resolve a real IPv4 address (not no-ip): the host name is a real, resolvable hostname, so other active checks (HTTP, SSL, ICMP) can be added without an explicit target override."
   }
 
   assert {
