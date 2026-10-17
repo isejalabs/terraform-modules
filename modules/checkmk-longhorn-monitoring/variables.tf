@@ -8,14 +8,13 @@ variable "checkmk" {
   sensitive = true
 }
 
-variable "folder" {
-  description = "Path of the existing Checkmk folder the hosts are created in, for example `/container/pve4`. The folder is not created or managed by this module."
+variable "folder_format" {
+  description = "Format string for the existing Checkmk folder each host is created in, with `%s` as the placeholder for the environment key, for example `/K8S/envs/%s` (dev/qa/prod each get their own folder). The folder is not created or managed by this module."
   type        = string
-  default     = "/"
 
   validation {
-    condition     = startswith(var.folder, "/")
-    error_message = "folder must be a folder path starting with `/`."
+    condition     = startswith(var.folder_format, "/") && length(regexall("%s", var.folder_format)) == 1
+    error_message = "folder_format must be a folder path starting with `/` and contain exactly one `%s` placeholder for the environment key."
   }
 }
 

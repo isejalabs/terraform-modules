@@ -7,6 +7,10 @@ locals {
   # would leave all but one polled -- hence still one host each.
   host_names = { for k, v in var.environments : k => regex("^https?://([^/]+)", v.endpoint)[0] }
 
+  # Each environment gets its own folder (e.g. /K8S/envs/dev), not a shared one: these hosts live alongside that
+  # environment's other Checkmk objects rather than in a catch-all folder.
+  folders = { for k in keys(var.environments) : k => format(var.folder_format, k) }
+
   rules = var.rules_enabled ? var.environments : {}
 
   # Python-literal string values, as the Checkmk rule API expects `value_raw`. The variable validation rules out
@@ -26,7 +30,7 @@ resource "checkmk_host" "this" {
   for_each = local.host_names
 
   host_name = each.value
-  folder    = var.folder
+  folder    = local.folders[each.key]
 
   attributes = {
     alias              = "${var.host_alias} (${each.key})"

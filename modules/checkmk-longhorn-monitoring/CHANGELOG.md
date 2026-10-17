@@ -39,6 +39,16 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Fixed
 
+## [0.3.0] - 2026-10-18
+
+### Changed
+
+- **Breaking:** the variable `folder` is replaced by `folder_format`, a format string with a `%s` placeholder
+  filled with the environment key (dev/qa/prod), e.g. `/K8S/envs/%s`. Each environment now gets its own
+  existing folder instead of sharing one flat folder across every host. Migration: set `folder_format`
+  accordingly; applying this version moves each existing host to its own folder (an in-place update, not a
+  replacement).
+
 ## [0.2.0] - 2026-10-16
 
 ### Changed
