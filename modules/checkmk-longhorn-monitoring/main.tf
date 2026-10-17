@@ -7,9 +7,13 @@ locals {
   # would leave all but one polled -- hence still one host each.
   host_names = { for k, v in var.environments : k => regex("^https?://([^/]+)", v.endpoint)[0] }
 
-  # Each environment gets its own folder (e.g. /K8S/envs/dev), not a shared one: these hosts live alongside that
-  # environment's other Checkmk objects rather than in a catch-all folder.
-  folders = { for k in keys(var.environments) : k => format(var.folder_format, k) }
+  # Each environment gets its own folder (e.g. /K8S/envs/dev) when folder_format has a %s placeholder, so these
+  # hosts can live alongside that environment's other Checkmk objects instead of a catch-all folder. Without a
+  # %s, every environment shares the same literal folder (format() errors if given an argument but no verb to
+  # consume it, so the literal path is used directly rather than passed through format()).
+  folders = { for k in keys(var.environments) : k =>
+    length(regexall("%s", var.folder_format)) > 0 ? format(var.folder_format, k) : var.folder_format
+  }
 
   rules = var.rules_enabled ? var.environments : {}
 

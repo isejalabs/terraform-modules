@@ -156,11 +156,24 @@ run "folder_format_without_leading_slash_is_rejected" {
   expect_failures = [var.folder_format]
 }
 
-run "folder_format_without_percent_s_is_rejected" {
+run "folder_format_without_percent_s_applies_to_every_environment" {
   command = plan
 
   variables {
     folder_format = "/container/pve4"
+  }
+
+  assert {
+    condition     = checkmk_host.this["dev"].folder == "/container/pve4" && checkmk_host.this["qa"].folder == "/container/pve4"
+    error_message = "A folder_format with no %s placeholder must apply to every environment unchanged, not be passed through format()."
+  }
+}
+
+run "folder_format_with_two_percent_s_is_rejected" {
+  command = plan
+
+  variables {
+    folder_format = "/%s/pve4/%s"
   }
 
   expect_failures = [var.folder_format]

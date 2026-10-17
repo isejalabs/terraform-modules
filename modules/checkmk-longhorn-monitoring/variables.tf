@@ -9,12 +9,12 @@ variable "checkmk" {
 }
 
 variable "folder_format" {
-  description = "Format string for the existing Checkmk folder each host is created in, with `%s` as the placeholder for the environment key, for example `/K8S/envs/%s` (dev/qa/prod each get their own folder). The folder is not created or managed by this module."
+  description = "Path of the existing Checkmk folder each host is created in, optionally with `%s` as a placeholder for the environment key -- for example `/K8S/envs/%s` gives dev/qa/prod each their own folder, while a plain path like `/misc` (no `%s`) puts every environment in the same shared folder. The folder is not created or managed by this module."
   type        = string
 
   validation {
-    condition     = startswith(var.folder_format, "/") && length(regexall("%s", var.folder_format)) == 1
-    error_message = "folder_format must be a folder path starting with `/` and contain exactly one `%s` placeholder for the environment key."
+    condition     = startswith(var.folder_format, "/") && length(regexall("%s", var.folder_format)) <= 1
+    error_message = "folder_format must be a folder path starting with `/` and contain at most one `%s` placeholder for the environment key."
   }
 }
 
