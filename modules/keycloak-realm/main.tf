@@ -1,0 +1,155 @@
+data "onepassword_item" "admin" {
+  vault = var.onepassword_vault_id
+  title = var.admin_item_title
+}
+
+data "onepassword_item" "ldap_bind" {
+  vault = var.onepassword_vault_id
+  title = var.ldap.bind_item_title
+}
+
+locals {
+  # A Login item exposes `username`/`password` directly; an item made of plain fields keeps them in sections.
+  admin_fields = merge([for s in data.onepassword_item.admin.section : { for f in s.field : f.label => f.value }]...)
+
+  admin_username = coalesce(data.onepassword_item.admin.username, try(local.admin_fields["username"], null))
+  admin_password = coalesce(data.onepassword_item.admin.password, try(local.admin_fields["password"], null))
+
+  # Keycloak takes several URLs, separated by a space, and tries them in order.
+  ldap_connection_url = join(" ", var.ldap.connection_urls)
+}
+
+resource "keycloak_realm" "this" {
+  for_each = var.realms
+
+  realm        = each.key
+  display_name = each.value.display_name
+  enabled      = true
+
+  # The realms are only reached through the Gateway, which terminates TLS.
+  ssl_required = "external"
+
+  login_with_email_allowed = false
+  duplicate_emails_allowed = false
+  registration_allowed     = false
+  reset_password_allowed   = false
+  edit_username_allowed    = false
+  verify_email             = false
+
+  password_policy = each.value.password_policy
+
+  security_defenses {
+    headers {
+      x_frame_options                     = "DENY"
+      content_security_policy             = "frame-src 'self'; frame-ancestors 'self'; object-src 'none';"
+      content_security_policy_report_only = ""
+      x_content_type_options              = "nosniff"
+      x_robots_tag                        = "none"
+      x_xss_protection                    = "1; mode=block"
+      strict_transport_security           = "max-age=31536000; includeSubDomains"
+    }
+    brute_force_detection {
+      permanent_lockout                = false
+      max_login_failures               = each.value.max_login_failures
+      wait_increment_seconds           = 60
+      quick_login_check_milli_seconds  = 1000
+      minimum_quick_login_wait_seconds = 60
+      max_failure_wait_seconds         = 900
+      failure_reset_time_seconds       = 43200
+    }
+  }
+
+  # Any WebAuthn authenticator (passkey, YubiKey, platform) as a second factor; the flows that require it are set up
+  # separately (isejalabs/homelab#1827).
+  web_authn_policy {
+    relying_party_entity_name     = each.value.display_name
+    signature_algorithms          = ["ES256", "RS256"]
+    user_verification_requirement = "preferred"
+  }
+}
+
+resource "keycloak_ldap_user_federation" "ucs" {
+  for_each = var.realms
+
+  name     = "ucs"
+  realm_id = keycloak_realm.this[each.key].id
+  enabled  = true
+
+  username_ldap_attribute = var.ldap.username_attribute
+  rdn_ldap_attribute      = var.ldap.rdn_attribute
+  uuid_ldap_attribute     = var.ldap.uuid_attribute
+  user_object_classes     = var.ldap.user_object_classes
+
+  connection_url  = local.ldap_connection_url
+  users_dn        = each.value.users_dn
+  bind_dn         = var.ldap.bind_dn
+  bind_credential = data.onepassword_item.ldap_bind.password
+
+  custom_user_search_filter = each.value.user_filter
+  search_scope              = "SUBTREE"
+
+  # UCS stays authoritative: users are imported so Keycloak keeps profiles, groups and MFA credentials during a UCS
+  # outage, but nothing is ever written back, and no account is created in Keycloak.
+  import_enabled     = true
+  edit_mode          = "READ_ONLY"
+  sync_registrations = false
+  trust_email        = true
+
+  full_sync_period    = var.ldap.full_sync_period
+  changed_sync_period = var.ldap.changed_sync_period
+
+  connection_timeout = "10s"
+  read_timeout       = "10s"
+
+  # Passwords are checked by binding as the user, never by reading a hash.
+  validate_password_policy = false
+  use_truststore_spi       = "ALWAYS"
+}
+
+resource "keycloak_ldap_group_mapper" "ucs" {
+  for_each = var.realms
+
+  name                    = "groups"
+  realm_id                = keycloak_realm.this[each.key].id
+  ldap_user_federation_id = keycloak_ldap_user_federation.ucs[each.key].id
+
+  ldap_groups_dn             = each.value.groups_dn
+  group_name_ldap_attribute  = var.ldap.group_name_attribute
+  group_object_classes       = var.ldap.group_object_classes
+  preserve_group_inheritance = false
+  ignore_missing_groups      = true
+  groups_ldap_filter         = each.value.groups_filter
+
+  membership_ldap_attribute      = var.ldap.group_member_attr
+  membership_attribute_type      = "DN"
+  membership_user_ldap_attribute = "uid"
+
+  mode                                 = "READ_ONLY"
+  user_roles_retrieve_strategy         = "LOAD_GROUPS_BY_MEMBER_ATTRIBUTE"
+  memberof_ldap_attribute              = "memberOf"
+  drop_non_existing_groups_during_sync = true
+}
+
+# Client scope that puts the group names into a `groups` claim. Clients add it as they are registered.
+resource "keycloak_openid_client_scope" "groups" {
+  for_each = var.realms
+
+  realm_id               = keycloak_realm.this[each.key].id
+  name                   = "groups"
+  description            = "Group names of the user, from the UCS groups."
+  include_in_token_scope = true
+}
+
+resource "keycloak_openid_group_membership_protocol_mapper" "groups" {
+  for_each = var.realms
+
+  realm_id        = keycloak_realm.this[each.key].id
+  client_scope_id = keycloak_openid_client_scope.groups[each.key].id
+  name            = "groups"
+  claim_name      = "groups"
+  full_path       = false
+
+  add_to_id_token     = true
+  add_to_access_token = true
+  add_to_userinfo     = true
+}
