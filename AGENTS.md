@@ -4,6 +4,8 @@ This file provides guidance to AI coding agents (Claude Code, and others reading
 
 @.commons/agents/AGENTS.common.md
 
+The shared conventions in `.commons/agents/AGENTS.common.md` apply here. Agents that do not expand the `@` import must initialize the submodule and read that file directly.
+
 ## About
 
 A monorepo of small, independent Terraform/OpenTofu modules, each living under `modules/<name>/`, meant to be consumed individually (e.g. `source = "git::https://github.com/isejalabs/terraform-modules.git//modules/<name>"`) from other repos' root configs — see [isejalabs/homelab](https://github.com/isejalabs/homelab) and [isejalabs/terraform-proxmox-talos](https://github.com/isejalabs/terraform-proxmox-talos) for real-world consumers. There is no root module tying them together; each `modules/<name>/` is fully standalone.
