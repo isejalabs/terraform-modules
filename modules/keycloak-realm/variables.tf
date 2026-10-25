@@ -61,6 +61,15 @@ variable "ldap" {
     group_ignore_missing           = optional(bool, true)
     group_drop_non_existing_synced = optional(bool, true)
     group_preserve_inheritance     = optional(bool, false)
+
+    # LDAP attributes behind the Keycloak user fields. Keycloak's own defaults read the first name from `cn`, which
+    # is the full name in UCS.
+    user_attributes = optional(object({
+      username   = optional(string, "uid")
+      email      = optional(string, "mail")
+      first_name = optional(string, "givenName")
+      last_name  = optional(string, "sn")
+    }), {})
   })
 
   validation {

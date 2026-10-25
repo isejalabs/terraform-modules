@@ -101,10 +101,45 @@ resource "keycloak_ldap_user_federation" "ucs" {
   connection_timeout = var.ldap.connection_timeout
   read_timeout       = var.ldap.read_timeout
 
+  # Keycloak's default mappers (first name from `cn`, ...) are replaced by the explicit ones below, so the mapping is
+  # visible and configurable. Only applies when the federation is created.
+  delete_default_mappers = true
+
   # Passwords are checked by binding as the user, never by reading a hash, so Keycloak has no password to validate
   # against its own policy.
   validate_password_policy = false
   use_truststore_spi       = var.ldap.use_truststore_spi
+}
+
+locals {
+  user_attribute_mappers = {
+    "username"      = { user_attribute = "username", ldap_attribute = var.ldap.user_attributes.username, mandatory = true, always_read = false }
+    "email"         = { user_attribute = "email", ldap_attribute = var.ldap.user_attributes.email, mandatory = false, always_read = true }
+    "first name"    = { user_attribute = "firstName", ldap_attribute = var.ldap.user_attributes.first_name, mandatory = true, always_read = true }
+    "last name"     = { user_attribute = "lastName", ldap_attribute = var.ldap.user_attributes.last_name, mandatory = true, always_read = true }
+    "creation date" = { user_attribute = "createTimestamp", ldap_attribute = "createTimestamp", mandatory = false, always_read = true }
+    "modify date"   = { user_attribute = "modifyTimestamp", ldap_attribute = "modifyTimestamp", mandatory = false, always_read = true }
+  }
+
+  # one mapper per realm and attribute
+  user_attribute_mapper_instances = merge([
+    for realm in keys(var.realms) : {
+      for name, m in local.user_attribute_mappers : "${realm}/${name}" => merge(m, { realm = realm, name = name })
+    }
+  ]...)
+}
+
+resource "keycloak_ldap_user_attribute_mapper" "ucs" {
+  for_each = local.user_attribute_mapper_instances
+
+  realm_id                    = keycloak_realm.this[each.value.realm].id
+  ldap_user_federation_id     = keycloak_ldap_user_federation.ucs[each.value.realm].id
+  name                        = each.value.name
+  user_model_attribute        = each.value.user_attribute
+  ldap_attribute              = each.value.ldap_attribute
+  read_only                   = true
+  always_read_value_from_ldap = each.value.always_read
+  is_mandatory_in_ldap        = each.value.mandatory
 }
 
 resource "keycloak_ldap_group_mapper" "ucs" {
