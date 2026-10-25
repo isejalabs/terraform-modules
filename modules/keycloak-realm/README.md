@@ -51,6 +51,8 @@ module "keycloak_realm" {
 }
 ```
 
+Everything else has a default that is what the homelab runs with and can be overridden: `realm_settings` (self-registration, e-mail login, `ssl_required`), `security_headers`, `brute_force`, `web_authn`, `groups_claim` (scope and claim name), and the optional attributes of `ldap` (search scope, timeouts, federation and mapper names, how memberships are read). Deliberately fixed: the federation and the group mapper are read-only and importing, because UCS stays authoritative.
+
 See [`docs/module.md`](docs/module.md) for the full auto-generated reference.
 
 ## 1Password items
@@ -60,7 +62,7 @@ See [`docs/module.md`](docs/module.md) for the full auto-generated reference.
 
 ## Tests
 
-`tests/realm.tftest.hcl` runs offline with mocked providers (`tofu test` in this directory): one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, and a plain `ldap://` URL or the `master` realm is rejected. It does not talk to a Keycloak or LDAP server.
+`tests/realm.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak, an LDAP server or 1Password, and the hostnames and DNs in it are placeholders. It checks one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, defaults and overrides of the settings above, and that a plain `ldap://` URL or the `master` realm is rejected.
 
 ## Caveats
 

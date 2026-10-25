@@ -1,5 +1,9 @@
-# Offline test (no Keycloak or 1Password needed): one realm and one UCS federation per entry of `realms`, the
-# federation is read-only and takes the bind credential from 1Password, and invalid input is rejected.
+# Offline test (no Keycloak, LDAP server or 1Password needed): one realm and one UCS federation per entry of `realms`,
+# the federation is read-only and takes the bind credential from 1Password, settings have working defaults and can be
+# overridden, and invalid input is rejected.
+#
+# Both providers are mocked and every run is a `plan`, so nothing here ever connects anywhere: the hostnames, DNs and
+# the item names below are placeholders (example.com is reserved for documentation) and only have to be well-formed.
 # Run: tofu test (from this directory)
 
 mock_provider "keycloak" {}
@@ -104,4 +108,55 @@ run "master_realm_is_rejected" {
   }
 
   expect_failures = [var.realms]
+}
+
+run "defaults_and_overrides" {
+  command = plan
+
+  assert {
+    condition     = keycloak_realm.this["iseja"].ssl_required == "external" && keycloak_ldap_user_federation.ucs["iseja"].search_scope == "SUBTREE" && keycloak_ldap_group_mapper.ucs["iseja"].membership_attribute_type == "DN"
+    error_message = "Without overrides, the documented defaults must apply."
+  }
+
+  assert {
+    condition     = keycloak_openid_client_scope.groups["iseja"].name == "groups"
+    error_message = "The groups client scope defaults to the name `groups`."
+  }
+}
+
+run "settings_can_be_overridden" {
+  command = plan
+
+  variables {
+    realm_settings = { ssl_required = "all" }
+    brute_force    = { wait_increment_seconds = 120 }
+    groups_claim   = { scope_name = "memberships", claim_name = "roles" }
+    ldap = {
+      connection_urls = ["ldaps://dc1.example.com:636"]
+      bind_dn         = "uid=keycloak-ro,cn=users,dc=example,dc=com"
+      bind_item_title = "keycloak-ldap-bind#dev"
+      search_scope    = "ONE_LEVEL"
+      read_timeout    = "30s"
+    }
+  }
+
+  assert {
+    condition     = keycloak_realm.this["iseja"].ssl_required == "all"
+    error_message = "realm_settings must override the default."
+  }
+
+  assert {
+    condition     = keycloak_realm.this["iseja"].security_defenses[0].brute_force_detection[0].wait_increment_seconds == 120
+    error_message = "brute_force must override the default."
+  }
+
+  assert {
+    condition     = keycloak_ldap_user_federation.ucs["iseja"].search_scope == "ONE_LEVEL" && keycloak_ldap_user_federation.ucs["iseja"].read_timeout == "30s"
+    error_message = "ldap must override search scope and timeout."
+  }
+
+  assert {
+    condition     = keycloak_openid_client_scope.groups["iseja"].name == "memberships" && keycloak_openid_group_membership_protocol_mapper.groups["iseja"].claim_name == "roles"
+    error_message = "groups_claim must rename the scope and the claim."
+  }
 }

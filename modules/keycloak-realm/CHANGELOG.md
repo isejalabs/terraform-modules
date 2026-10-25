@@ -33,7 +33,7 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
-- Initial module: one Keycloak realm per entry of `realms` (password policy, brute-force detection, security headers, WebAuthn policy), each with a read-only, importing LDAP federation to UCS over LDAPS with several connection URLs for failover and a per-realm user filter, a group mapper, and a `groups` client scope with a group-membership mapper. The provider login and the LDAP bind credential are read from 1Password. Uses the `keycloak/keycloak` provider (`~> 5.10`). An offline `tofu test` (mocked providers) covers the per-realm resources, the federation settings and the input validation. ([#66](https://github.com/isejalabs/terraform-modules/issues/66))
+- Initial module: one Keycloak realm per entry of `realms` (password policy, brute-force detection, security headers, WebAuthn policy), each with a read-only, importing LDAP federation to UCS over LDAPS with several connection URLs for failover and a per-realm user filter, a group mapper, and a `groups` client scope with a group-membership mapper. The provider login and the LDAP bind credential are read from 1Password. Uses the `keycloak/keycloak` provider (`~> 5.10`). The realm settings, security headers, brute-force detection, WebAuthn policy, group claim and the LDAP/group-mapper tuning are variables with defaults. An offline `tofu test` (mocked providers) covers the per-realm resources, the federation settings, defaults/overrides and the input validation. ([#66](https://github.com/isejalabs/terraform-modules/issues/66))
 
 ### Changed
 
