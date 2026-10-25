@@ -160,3 +160,22 @@ run "settings_can_be_overridden" {
     error_message = "groups_claim must rename the scope and the claim."
   }
 }
+
+run "user_attribute_mappers_replace_the_defaults" {
+  command = plan
+
+  assert {
+    condition     = keycloak_ldap_user_federation.ucs["iseja"].delete_default_mappers
+    error_message = "Keycloak's default mappers must be deleted, the module creates its own."
+  }
+
+  assert {
+    condition     = keycloak_ldap_user_attribute_mapper.ucs["iseja/first name"].ldap_attribute == "givenName" && keycloak_ldap_user_attribute_mapper.ucs["iseja/last name"].ldap_attribute == "sn" && keycloak_ldap_user_attribute_mapper.ucs["admin/email"].ldap_attribute == "mail"
+    error_message = "The first name must come from givenName, not cn."
+  }
+
+  assert {
+    condition     = length(keycloak_ldap_user_attribute_mapper.ucs) == 12 && keycloak_ldap_user_attribute_mapper.ucs["iseja/email"].always_read_value_from_ldap
+    error_message = "Six mappers per realm, and the e-mail address is always read from the directory."
+  }
+}

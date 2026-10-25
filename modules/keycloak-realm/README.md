@@ -51,7 +51,7 @@ module "keycloak_realm" {
 }
 ```
 
-Everything else has a default that is what the homelab runs with and can be overridden: `realm_settings` (self-registration, e-mail login, `ssl_required`), `security_headers`, `brute_force`, `web_authn`, `groups_claim` (scope and claim name), and the optional attributes of `ldap` (search scope, timeouts, federation and mapper names, how memberships are read). Deliberately fixed: the federation and the group mapper are read-only and importing, because UCS stays authoritative.
+Everything else has a default that is what the homelab runs with and can be overridden: `realm_settings` (self-registration, e-mail login, `ssl_required`), `security_headers`, `brute_force`, `web_authn`, `groups_claim` (scope and claim name), and the optional attributes of `ldap` (search scope, timeouts, federation and mapper names, how memberships are read, and `user_attributes`: which LDAP attribute feeds Keycloak's username, e-mail, first name and last name; defaults `uid`, `mail`, `givenName`, `sn`). The Keycloak default of reading the first name from `cn` is deliberately not used: in UCS `cn` is the full name. Keycloak's default mappers are only deleted when a federation is created, so replace an existing federation once (`-replace`) to adopt this. Deliberately fixed: the federation and the group mapper are read-only and importing, because UCS stays authoritative.
 
 See [`docs/module.md`](docs/module.md) for the full auto-generated reference.
 

@@ -33,11 +33,19 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+- `ldap.user_attributes` (username, e-mail, first name, last name) and explicit user attribute mappers per realm, including read-only creation/modify timestamps. ([#N](https://github.com/isejalabs/terraform-modules/issues/72))
+
 ### Changed
+
+- The federation deletes Keycloak's default mappers (`delete_default_mappers`), which only takes effect when the federation is created: an existing federation must be replaced once (`-replace`) to adopt this. ([#N](https://github.com/isejalabs/terraform-modules/issues/72))
 
 ### Removed
 
+- The default Kerberos principal attribute mapper is no longer created; Kerberos is set up separately (isejalabs/homelab#1827).
+
 ### Fixed
+
+- The first name is read from `givenName`, not `cn` (the full name in UCS), which showed users as "Sebastian Klamar Klamar". ([#N](https://github.com/isejalabs/terraform-modules/issues/72))
 
 ## [0.1.0] - 2026-10-25
 
