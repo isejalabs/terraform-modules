@@ -33,6 +33,16 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.2.0] - 2026-10-25
+
+### Added
+
 - `ldap.user_attributes` (username, e-mail, first name, last name) and explicit user attribute mappers per realm, including read-only creation/modify timestamps. ([#N](https://github.com/isejalabs/terraform-modules/issues/72))
 
 ### Changed
