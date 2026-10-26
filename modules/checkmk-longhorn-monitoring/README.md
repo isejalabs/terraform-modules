@@ -15,11 +15,14 @@ See the [Changelog](CHANGELOG.md) for all notable changes.
 - **One host per environment**, named after the real hostname of that environment's Longhorn deployment (the
   `endpoint`'s own hostname, scheme stripped -- for example `environments.dev.endpoint =
   "http://dev-longhorn.dev.example.com"` gives a host named `dev-longhorn.dev.example.com`;
-  `tag_address_family = ip-v4-only`, `tag_agent = special-agents`) in an existing folder. Unlike
+  `tag_address_family = ip-v4-only` by default (see `address_family`), `tag_agent = special-agents`) in an existing
+  folder. Unlike
   `checkmk-rustfs-monitoring`'s synthetic, no-ip identities, this host resolves a real IPv4 address: the host
   name is the real, DNS-resolvable Longhorn hostname, so there's no synthetic-identity reason to withhold
   address resolution, and other active checks (HTTP, SSL certificate, ICMP) can be added to the same host later
-  without an explicit "connect to" override. Unlike `checkmk-rustfs-monitoring`, there is no shared endpoint
+  without an explicit "connect to" override. Set `address_family = "no-ip"` where ICMP to that address is not
+  answered (for example a load-balancer virtual IP): the hosts then get no address, so no PING service and no
+  DOWN state, and the special agent still works from the endpoint in its rule. Unlike `checkmk-rustfs-monitoring`, there is no shared endpoint
   across environments here that would need a synthetic per-environment name: each environment already has its
   own real, resolvable hostname, so the Checkmk host name matches the thing you'd actually go check. Checkmk
   runs only the **first** matching rule of the special-agent ruleset per host, so one host for several
@@ -102,7 +105,7 @@ permissions) is enough, minus the Password Store permissions this module never u
 ## Tests
 
 `tests/monitoring.tftest.hcl` runs offline with a mocked provider (`tofu test` in this directory): one host
-per environment with no Checkmk agent connection but a resolved IPv4 address, no rule exists by default, the
+per environment with no Checkmk agent connection and, by default, a resolved IPv4 address (or none with `address_family = "no-ip"`), no rule exists by default, the
 rule's `value_raw` follows the contract exactly (endpoint only) and applies to the host of its environment
 only, the activation never forces foreign changes, and bad input (quotes in the endpoint, a path in the
 endpoint, a folder without a leading slash) is rejected.

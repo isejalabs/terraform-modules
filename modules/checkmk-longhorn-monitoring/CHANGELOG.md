@@ -33,6 +33,12 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+- Variable `address_family` (`ip-v4-only`, the default, or `no-ip`) for the hosts' `tag_address_family`. With `no-ip`
+  the hosts have no address, so Checkmk runs no host check (PING) and the host never goes DOWN when ICMP to the
+  Longhorn endpoint's address is unanswered (for example a load-balancer virtual IP); the special agent only needs
+  the endpoint from its rule. The default is unchanged, so this is not breaking.
+  ([#76](https://github.com/isejalabs/terraform-modules/issues/76))
+
 ### Changed
 
 ### Removed
