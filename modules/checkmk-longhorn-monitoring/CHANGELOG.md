@@ -39,6 +39,18 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Fixed
 
+## [0.4.0] - 2026-10-28
+
+### Changed
+
+- **Breaking:** the variable `folder` is replaced by `folder_format`. With a `%s` placeholder (e.g.
+  `/K8S/envs/%s`), each environment gets its own existing folder, filled with the environment key (dev/qa/
+  prod); without one, the plain path applies to every environment unchanged, same as the old `folder` behaved.
+  Migration: rename `folder` to `folder_format`, keeping the same value if a shared folder is still wanted, or
+  adding a `%s` for a per-environment one; applying this version moves each existing host to its (possibly
+  unchanged) folder, an in-place update, not a replacement.
+  ([#64](https://github.com/isejalabs/terraform-modules/issues/64))
+
 ## [0.3.0] - 2026-10-26
 
 ### Added

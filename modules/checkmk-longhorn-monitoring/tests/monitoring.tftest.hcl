@@ -5,8 +5,8 @@
 mock_provider "checkmk" {}
 
 variables {
-  checkmk = { url = "https://checkmk.example.com/prod", username = "terraform", secret = "automation-secret" }
-  folder  = "/container/pve4"
+  checkmk       = { url = "https://checkmk.example.com/prod", username = "terraform", secret = "automation-secret" }
+  folder_format = "/container/pve4/%s"
   environments = {
     dev = { endpoint = "http://longhorn.dev.example.com" }
     qa  = { endpoint = "http://longhorn.qa.example.com" }
@@ -22,8 +22,8 @@ run "host_has_no_agent_but_resolves_a_real_address" {
   }
 
   assert {
-    condition     = checkmk_host.this["dev"].host_name == "longhorn.dev.example.com" && checkmk_host.this["qa"].host_name == "longhorn.qa.example.com" && checkmk_host.this["dev"].folder == "/container/pve4"
-    error_message = "The host name must be the real endpoint hostname (scheme stripped), not a synthetic pattern, in the given folder."
+    condition     = checkmk_host.this["dev"].host_name == "longhorn.dev.example.com" && checkmk_host.this["qa"].host_name == "longhorn.qa.example.com" && checkmk_host.this["dev"].folder == "/container/pve4/dev" && checkmk_host.this["qa"].folder == "/container/pve4/qa"
+    error_message = "The host name must be the real endpoint hostname (scheme stripped), not a synthetic pattern, in its own per-environment folder."
   }
 
   assert {
@@ -169,12 +169,35 @@ run "endpoint_with_path_is_rejected" {
   expect_failures = [var.environments]
 }
 
-run "folder_without_leading_slash_is_rejected" {
+run "folder_format_without_leading_slash_is_rejected" {
   command = plan
 
   variables {
-    folder = "container/pve4"
+    folder_format = "container/pve4/%s"
   }
 
-  expect_failures = [var.folder]
+  expect_failures = [var.folder_format]
+}
+
+run "folder_format_without_percent_s_applies_to_every_environment" {
+  command = plan
+
+  variables {
+    folder_format = "/container/pve4"
+  }
+
+  assert {
+    condition     = checkmk_host.this["dev"].folder == "/container/pve4" && checkmk_host.this["qa"].folder == "/container/pve4"
+    error_message = "A folder_format with no %s placeholder must apply to every environment unchanged, not be passed through format()."
+  }
+}
+
+run "folder_format_with_two_percent_s_is_rejected" {
+  command = plan
+
+  variables {
+    folder_format = "/%s/pve4/%s"
+  }
+
+  expect_failures = [var.folder_format]
 }
