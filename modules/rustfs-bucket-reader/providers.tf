@@ -2,7 +2,7 @@ terraform {
   required_providers {
     rustfs = {
       source  = "weinmann-emt/rustfs"
-      version = "~> 0.0.8"
+      version = "~> 0.1.0"
     }
     random = {
       source  = "hashicorp/random"
