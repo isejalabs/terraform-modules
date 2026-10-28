@@ -42,6 +42,29 @@ run "host_has_no_agent_but_resolves_a_real_address" {
   }
 }
 
+run "address_family_can_be_no_ip" {
+  command = plan
+
+  variables {
+    address_family = "no-ip"
+  }
+
+  assert {
+    condition     = alltrue([for h in checkmk_host.this : h.attributes["tag_agent"] == "special-agents" && h.attributes["tag_address_family"] == "no-ip"])
+    error_message = "With address_family = no-ip every host must have no address (and still no Checkmk agent)."
+  }
+}
+
+run "address_family_rejects_unknown_value" {
+  command = plan
+
+  variables {
+    address_family = "ip-v6-only"
+  }
+
+  expect_failures = [var.address_family]
+}
+
 run "host_name_strips_port_too" {
   command = plan
 

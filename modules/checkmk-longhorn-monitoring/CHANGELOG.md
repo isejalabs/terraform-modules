@@ -39,7 +39,7 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Fixed
 
-## [0.3.0] - 2026-10-18
+## [0.4.0] - 2026-10-28
 
 ### Changed
 
@@ -49,6 +49,17 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
   Migration: rename `folder` to `folder_format`, keeping the same value if a shared folder is still wanted, or
   adding a `%s` for a per-environment one; applying this version moves each existing host to its (possibly
   unchanged) folder, an in-place update, not a replacement.
+  ([#64](https://github.com/isejalabs/terraform-modules/issues/64))
+
+## [0.3.0] - 2026-10-26
+
+### Added
+
+- Variable `address_family` (`ip-v4-only`, the default, or `no-ip`) for the hosts' `tag_address_family`. With `no-ip`
+  the hosts have no address, so Checkmk runs no host check (PING) and the host never goes DOWN when ICMP to the
+  Longhorn endpoint's address is unanswered (for example a load-balancer virtual IP); the special agent only needs
+  the endpoint from its rule. The default is unchanged, so this is not breaking.
+  ([#76](https://github.com/isejalabs/terraform-modules/issues/76))
 
 ## [0.2.0] - 2026-10-16
 

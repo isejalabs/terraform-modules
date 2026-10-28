@@ -24,12 +24,13 @@ locals {
   } }
 }
 
-# Dedicated hosts, one per environment, with no Checkmk agent connection (only the configured special agent) --
-# but, unlike checkmk-rustfs-monitoring's synthetic identities, resolved to a real IPv4 address rather than
-# no-ip: the host name is the real, DNS-resolvable Longhorn hostname, so there is no synthetic-identity reason
-# to withhold address resolution. This lets other active checks (HTTP, SSL certificate, ICMP) be added to the
-# same host later without needing an explicit "connect to" override, since Checkmk can resolve the host's own
-# primary address itself.
+# Dedicated hosts, one per environment, with no Checkmk agent connection (only the configured special agent).
+# By default (address_family = "ip-v4-only"), unlike checkmk-rustfs-monitoring's synthetic identities, the host is
+# resolved to a real IPv4 address: the host name is the real, DNS-resolvable Longhorn hostname, so there is no
+# synthetic-identity reason to withhold address resolution. This lets other active checks (HTTP, SSL certificate,
+# ICMP) be added to the same host later without needing an explicit "connect to" override, since Checkmk can
+# resolve the host's own primary address itself. With "no-ip" the host has no address at all, so Checkmk runs no
+# host check (PING) -- the special agent only uses the endpoint from its rule.
 resource "checkmk_host" "this" {
   for_each = local.host_names
 
@@ -38,7 +39,7 @@ resource "checkmk_host" "this" {
 
   attributes = {
     alias              = "${var.host_alias} (${each.key})"
-    tag_address_family = "ip-v4-only"
+    tag_address_family = var.address_family
     tag_agent          = "special-agents"
   }
 }

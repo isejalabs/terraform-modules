@@ -24,6 +24,17 @@ variable "host_alias" {
   default     = "Longhorn disk capacity (API only)"
 }
 
+variable "address_family" {
+  description = "Checkmk IP address family tag of the hosts: `ip-v4-only` resolves the host name to a real IPv4 address (Checkmk then runs a host check, PING, and other active checks such as HTTP or SSL can be added later without a \"connect to\" override), `no-ip` gives the hosts no address at all (no PING service and no host DOWN state; the special agent only uses the endpoint from its rule). Use `no-ip` where ICMP to the endpoint's address is not answered, for example a load-balancer virtual IP."
+  type        = string
+  default     = "ip-v4-only"
+
+  validation {
+    condition     = contains(["ip-v4-only", "no-ip"], var.address_family)
+    error_message = "address_family must be `ip-v4-only` or `no-ip`."
+  }
+}
+
 variable "rules_enabled" {
   description = "Whether to create the special-agent rules. Keep it `false` until the plugin that defines the ruleset `special_agents:longhorn_capacity` is installed on the site: Checkmk rejects a rule for a ruleset it does not know. The hosts and the activation are created either way."
   type        = bool
