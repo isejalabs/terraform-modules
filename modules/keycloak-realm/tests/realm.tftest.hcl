@@ -179,3 +179,59 @@ run "user_attribute_mappers_replace_the_defaults" {
     error_message = "Six mappers per realm, and the e-mail address is always read from the directory."
   }
 }
+
+run "admin_login_is_the_default_grant" {
+  command = plan
+
+  assert {
+    condition     = length(data.onepassword_item.admin) == 1 && length(data.onepassword_item.client) == 0 && local.client_id == "admin-cli" && local.admin_username == "admin" && local.client_secret == null
+    error_message = "With only admin_item_title set, the provider logs in as that admin through admin-cli."
+  }
+}
+
+run "service_account_client_replaces_the_admin_login" {
+  command = plan
+
+  variables {
+    admin_item_title  = null
+    client_item_title = "keycloak-terragrunt#dev"
+  }
+
+  override_data {
+    target = data.onepassword_item.client
+    values = {
+      username = "terragrunt"
+      password = "mock-client-secret"
+    }
+  }
+
+  assert {
+    condition     = length(data.onepassword_item.admin) == 0 && local.client_id == "terragrunt" && local.client_secret == "mock-client-secret" && local.admin_username == null && local.admin_password == null
+    error_message = "With client_item_title set, the admin item is not read and the provider uses the client credentials only."
+  }
+
+  assert {
+    condition     = length(keycloak_realm.this) == 2
+    error_message = "The realms are planned the same way with either login."
+  }
+}
+
+run "both_logins_are_rejected" {
+  command = plan
+
+  variables {
+    client_item_title = "keycloak-terragrunt#dev"
+  }
+
+  expect_failures = [var.client_item_title]
+}
+
+run "no_login_is_rejected" {
+  command = plan
+
+  variables {
+    admin_item_title = null
+  }
+
+  expect_failures = [var.client_item_title]
+}

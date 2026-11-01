@@ -17,8 +17,20 @@ variable "keycloak_url" {
 }
 
 variable "admin_item_title" {
-  description = "Title of the 1Password item holding the Keycloak admin login the provider authenticates with, for example `keycloak-bootstrap-admin#qa`. Read from the item's `username` and `password` (a Login item), or from fields with those labels in any section."
+  description = "Title of the 1Password item holding a Keycloak admin login the provider authenticates with (password grant, `admin-cli`), for example `keycloak-bootstrap-admin#qa`. Read from the item's `username` and `password` (a Login item), or from fields with those labels in any section. Set exactly one of this and `client_item_title`; prefer the client, so routine automation does not hold the break-glass login."
   type        = string
+  default     = null
+}
+
+variable "client_item_title" {
+  description = "Title of the 1Password item holding the credential of a service-account client in the `master` realm (client-credentials grant), for example `keycloak-terragrunt#qa`, as written by the `keycloak-automation` module: a login item with the client ID as `username` and the client secret as `password`. Set exactly one of this and `admin_item_title`."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = (var.client_item_title == null) != (var.admin_item_title == null)
+    error_message = "Set exactly one of client_item_title (service-account client) and admin_item_title (admin login)."
+  }
 }
 
 variable "ldap" {

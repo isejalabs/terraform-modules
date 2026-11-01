@@ -33,7 +33,11 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+- `client_item_title`: the provider can log in with the client-credentials grant of a service-account client (as created by the new `keycloak-automation` module) instead of an admin login. ([#82](https://github.com/isejalabs/terraform-modules/issues/82))
+
 ### Changed
+
+- `admin_item_title` is optional now; exactly one of it and `client_item_title` must be set, so existing callers keep working unchanged. ([#82](https://github.com/isejalabs/terraform-modules/issues/82))
 
 ### Removed
 

@@ -25,8 +25,8 @@ module "keycloak_realm" {
   onepassword          = { service_account_token = var.onepassword_token }
   onepassword_vault_id = "<vault uuid>"
 
-  keycloak_url     = "https://auth.example.com"
-  admin_item_title = "keycloak-bootstrap-admin#dev"
+  keycloak_url      = "https://auth.example.com"
+  client_item_title = "keycloak-terragrunt#dev" # written by the keycloak-automation module
 
   ldap = {
     connection_urls = ["ldaps://dc1.example.com:636", "ldaps://dc2.example.com:636"] # failover order
@@ -57,12 +57,13 @@ See [`docs/module.md`](docs/module.md) for the full auto-generated reference.
 
 ## 1Password items
 
-- `admin_item_title`: the Keycloak admin login the provider authenticates with (`admin-cli`, password grant, `master` realm). Either a Login item (`username`, `password`) or an item with fields labelled `username` and `password`, which is what the External Secrets `extract` of the bootstrap admin reads. It is the Keycloak Operator's bootstrap admin until a dedicated service account client replaces it.
+- `client_item_title` (recommended): the credential of a service-account client in the `master` realm, which the provider uses with the client-credentials grant. A login item with the client ID as `username` and the client secret as `password`, as written by the [`keycloak-automation`](../keycloak-automation) module. Routine automation then does not hold the break-glass login.
+- `admin_item_title`: alternatively, a Keycloak admin login the provider authenticates with (`admin-cli`, password grant, `master` realm). Either a Login item (`username`, `password`) or an item with fields labelled `username` and `password`, which is what the External Secrets `extract` of the bootstrap admin reads. Set exactly one of `client_item_title` and `admin_item_title`.
 - `ldap.bind_item_title`: the item whose `password` is the bind credential of the read-only directory account (`ldap.bind_dn`).
 
 ## Tests
 
-`tests/realm.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak, an LDAP server or 1Password, and the hostnames and DNs in it are placeholders. It checks one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, defaults and overrides of the settings above, and that a plain `ldap://` URL or the `master` realm is rejected.
+`tests/realm.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak, an LDAP server or 1Password, and the hostnames and DNs in it are placeholders. It checks one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, defaults and overrides of the settings above, that the provider logs in with the admin login or, when `client_item_title` is set, with the client credentials only (exactly one of the two must be set), and that a plain `ldap://` URL or the `master` realm is rejected.
 
 ## Caveats
 

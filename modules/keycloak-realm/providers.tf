@@ -19,11 +19,14 @@ provider "onepassword" {
   service_account_token = var.onepassword.service_account_token
 }
 
-# Logs in with the password grant of the `admin-cli` client in the `master` realm. The credentials are the
-# bootstrap admin the Keycloak Operator created; a dedicated service account client replaces it once there is one.
+# Logs in with the client-credentials grant of the service-account client (client_item_title, created by the
+# keycloak-automation module), or, when only admin_item_title is set, with the password grant of the `admin-cli` client
+# in the `master` realm as that admin (the bootstrap admin the Keycloak Operator created). Arguments of the other grant
+# stay null.
 provider "keycloak" {
-  client_id = "admin-cli"
-  url       = var.keycloak_url
-  username  = local.admin_username
-  password  = local.admin_password
+  client_id     = local.client_id
+  client_secret = local.client_secret
+  url           = var.keycloak_url
+  username      = local.admin_username
+  password      = local.admin_password
 }
