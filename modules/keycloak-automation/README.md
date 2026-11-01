@@ -3,7 +3,7 @@
 The identity that automates a Keycloak instance, so that routine realm automation ([`keycloak-realm`](../keycloak-realm)) does not hold the break-glass administrator's login ([ADR 0016 in isejalabs/homelab](https://github.com/isejalabs/homelab/blob/main/docs/decisions/0016-identity-and-web-sso.md), point 9; [isejalabs/homelab#1942](https://github.com/isejalabs/homelab/issues/1942)):
 
 - a **confidential client** `terragrunt` in the `master` realm that can only use the **client-credentials grant** (service account; no browser flow, no implicit flow, no password grant),
-- the realm role `create-realm` for that service account, and `realm-admin` of the `<realm>-realm` client of every realm named in `existing_realms`, nothing else (in particular not the `admin` role),
+- the realm role `create-realm` for that service account, and the realm-management roles (`manage-realm`, `manage-users`, `manage-clients`, ..., `realm_management_roles`) of the `<realm>-realm` client of every realm named in `existing_realms`, nothing else (in particular not the `admin` role),
 - the generated client secret, written to a 1Password **login item** (`client_item_title`: client ID as username, secret as password), which `keycloak-realm` reads through its own `client_item_title`.
 
 Uses the official [`keycloak/keycloak`](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs) provider (`~> 5.10`) and `1Password/onepassword`, and the [`onepassword-item`](../onepassword-item) module.
@@ -12,10 +12,10 @@ See the [Changelog](CHANGELOG.md) for all notable changes.
 
 ## How the roles come about
 
-The client needs the least that lets `keycloak-realm` run. Checked against the [provider documentation](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs#assigning-roles) and the Keycloak source (`AdminRoles`, `RealmsAdminResource`), not yet against a live instance:
+The client needs the least that lets `keycloak-realm` run. Checked against the [provider documentation](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs#assigning-roles) and the Keycloak source (`AdminRoles`, `RealmsAdminResource`), and applied and used against a live Keycloak 26 (`dev` of the homelab): all resources of `keycloak-realm` refresh with this client alone.
 
 - `create-realm` is a realm role of the `master` realm. When a user without the `admin` role creates a realm, Keycloak grants that user all realm-management roles of the new realm's `<realm>-realm` client. The service account is such a user, so realms that `keycloak-realm` creates itself (a fresh instance) need nothing more.
-- A realm that exists already (created by the bootstrap admin earlier, or brought back by a restore) is not covered by that. Name it in `existing_realms`: the client gets `realm-admin`, the composite of all realm-management roles of that realm's `<realm>-realm` client, for that realm only.
+- A realm that exists already (created by the bootstrap admin earlier, or brought back by a restore) is not covered by that. Name it in `existing_realms`: the client gets the individual realm-management roles of that realm's `<realm>-realm` client (`realm_management_roles`, by default exactly the set Keycloak grants a realm's creator), for that realm only. There is no composite `realm-admin` role in these clients: assigning it fails with `404 Role not found` (seen in `dev`).
 
 ## Usage
 
@@ -48,7 +48,7 @@ Change `secret_rotation` to a new value (for example the date) and apply this mo
 
 ## Tests
 
-`tests/automation.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak or 1Password, and the hostname and item names in it are placeholders. It checks the client is confidential and uses only the client-credentials grant in the `master` realm, the `create-realm` role, `realm-admin` only for the realms in `existing_realms`, the rotation value, and that the `master` realm is rejected in `existing_realms`.
+`tests/automation.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak or 1Password, and the hostname and item names in it are placeholders. It checks the client is confidential and uses only the client-credentials grant in the `master` realm, the `create-realm` role, the realm-management roles only for the realms in `existing_realms`, the rotation value, and that the `master` realm is rejected in `existing_realms`.
 
 ## Caveats
 
@@ -56,7 +56,7 @@ Change `secret_rotation` to a new value (for example the date) and apply this mo
 - **The client lives in the `master` realm of the Keycloak database.** Restoring a dump from another environment (or an older dump) replaces it: the restored `master` realm has that dump's client and secret, which do not match the 1Password item of this environment. Sign in with the break-glass administrator of the restored data (its password is the dump's, not necessarily the 1Password one), then apply this module again with `secret_rotation` changed; if the restored realm has no such client, the apply recreates it (a leftover one of the same client ID must be imported or deleted first).
 - `existing_realms` needs the realms to exist when it is applied (the module looks up their `<realm>-realm` clients). Add a realm to the list only after it was created; on a fresh instance leave it empty and let `keycloak-realm` create the realms.
 - The bootstrap administrator is not changed by this module. Keep its item; it is the emergency access ([isejalabs/homelab `docs/keycloak-break-glass.md`](https://github.com/isejalabs/homelab/blob/main/docs/keycloak-break-glass.md)).
-- Whether the set of roles is exactly enough for every resource `keycloak-realm` manages (realm settings, LDAP federation and its mappers, client scopes) was derived from the documentation and source, not yet run against a live instance. If an apply of `keycloak-realm` is refused with a 403, the missing role is the one to add here, not the `admin` role.
+- Verified in `dev` (Keycloak 26.8): the client logs in with the client-credentials grant, and `keycloak-realm` refreshes every resource it manages (realms, LDAP federations and mappers, client scopes, SAML clients) with it alone, also after rotating the secret. Not yet exercised: a *write* by this client through an apply of `keycloak-realm`. If one is refused with a 403, the missing role is the one to add to `realm_management_roles`, not the `admin` role.
 
 ## Feedback
 

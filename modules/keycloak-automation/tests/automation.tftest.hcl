@@ -1,6 +1,6 @@
 # Offline test (no Keycloak or 1Password needed): the automation client is a confidential service-account client of
 # the master realm that can only use the client-credentials grant, it gets `create-realm` and, for realms that already
-# exist, `realm-admin` of each realm's management client, and invalid input is rejected.
+# exist, the realm-management roles of each realm's management client, and invalid input is rejected.
 #
 # Both providers are mocked and every run is a `plan`, so nothing here ever connects anywhere: the hostname and the
 # item names below are placeholders (example.com is reserved for documentation) and only have to be well-formed.
@@ -48,12 +48,12 @@ run "client_may_create_realms_and_nothing_else_by_default" {
   }
 
   assert {
-    condition     = length(keycloak_openid_client_service_account_role.realm_admin) == 0
-    error_message = "Without existing_realms, no realm-admin role is assigned: realms the client creates are administered through what Keycloak grants the creator."
+    condition     = length(keycloak_openid_client_service_account_role.realm_management) == 0
+    error_message = "Without existing_realms, no realm-management role is assigned: realms the client creates are administered through what Keycloak grants the creator."
   }
 }
 
-run "existing_realms_get_realm_admin_of_their_management_client" {
+run "existing_realms_get_the_realm_management_roles_of_their_management_client" {
   command = plan
 
   variables {
@@ -61,13 +61,27 @@ run "existing_realms_get_realm_admin_of_their_management_client" {
   }
 
   assert {
-    condition     = length(keycloak_openid_client_service_account_role.realm_admin) == 2 && alltrue([for r in keycloak_openid_client_service_account_role.realm_admin : r.role == "realm-admin" && r.realm_id == "master"])
-    error_message = "Every realm in existing_realms must give the client realm-admin of its <realm>-realm client in the master realm."
+    condition     = length(keycloak_openid_client_service_account_role.realm_management) == 2 * length(var.realm_management_roles) && keycloak_openid_client_service_account_role.realm_management["iseja/manage-realm"].role == "manage-realm" && alltrue([for r in keycloak_openid_client_service_account_role.realm_management : r.realm_id == "master"])
+    error_message = "Every realm in existing_realms must give the client each realm-management role of its <realm>-realm client in the master realm."
   }
 
   assert {
     condition     = data.keycloak_openid_client.realm_management["iseja"].client_id == "iseja-realm" && data.keycloak_openid_client.realm_management["admin"].client_id == "admin-realm"
     error_message = "The management client of a realm is named <realm>-realm."
+  }
+}
+
+run "realm_management_roles_can_be_narrowed" {
+  command = plan
+
+  variables {
+    existing_realms        = ["iseja"]
+    realm_management_roles = ["manage-realm", "view-realm"]
+  }
+
+  assert {
+    condition     = length(keycloak_openid_client_service_account_role.realm_management) == 2
+    error_message = "realm_management_roles must decide which roles are assigned."
   }
 }
 

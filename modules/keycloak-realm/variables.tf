@@ -177,3 +177,75 @@ variable "groups_claim" {
   })
   default = {}
 }
+
+variable "saml_clients" {
+  description = <<-EOT
+    SAML clients (service providers) to register, keyed by a name of your choice that only identifies the entry in the state; the key can not be reused for another client without recreating it.
+
+    - `realm`: the realm of `realms` whose accounts may use the client. An application that accepts accounts from two realms needs one client per realm.
+    - `client_id`: the SP's entity ID. For Checkmk `https://<host>/<site>/check_mk/saml_metadata.py`.
+    - `acs_url`: the assertion consumer service of the SP, the only redirect URI. For Checkmk `https://<host>/<site>/check_mk/saml_acs.py?acs`.
+    - `name`: display name in the admin console, the key when unset.
+    - `include_email`: also send the e-mail address. Off by default: an application that notifies its users by e-mail would start notifying every user it creates.
+    - `signing_certificate`: certificate (PEM, without header lines) the SP signs its authentication requests with. Unset: Keycloak does not require signed requests.
+  EOT
+  type = map(object({
+    realm               = string
+    client_id           = string
+    acs_url             = string
+    name                = optional(string)
+    include_email       = optional(bool, false)
+    signing_certificate = optional(string)
+  }))
+  default = {}
+
+  validation {
+    condition     = alltrue([for c in var.saml_clients : contains(keys(var.realms), c.realm)])
+    error_message = "Every saml_clients entry must name a realm that is defined in realms."
+  }
+
+  validation {
+    condition     = alltrue([for c in var.saml_clients : startswith(c.client_id, "https://") && startswith(c.acs_url, "https://")])
+    error_message = "client_id and acs_url of every SAML client must be https:// URLs."
+  }
+
+  validation {
+    condition     = length(distinct([for c in var.saml_clients : "${c.realm} ${c.client_id}"])) == length(var.saml_clients)
+    error_message = "A client_id can only be registered once per realm."
+  }
+}
+
+variable "saml_claims" {
+  description = <<-EOT
+    Names of the SAML attributes that the clients of `saml_clients` receive, the same for all clients.
+
+    - `user_id`, `alias`, `email`, `groups`: attribute names, in URI format. Checkmk requires the user ID attribute name to be a URL starting with `http`.
+    - `alias_property`: the Keycloak user property that feeds the alias (display name): `username`, `firstName`, `lastName` or `email`. Keycloak has no full-name property.
+    - `groups_full_path`: send group paths (`/group`) instead of plain names.
+  EOT
+  type = object({
+    user_id          = optional(string, "https://iseja.net/claims/userid")
+    alias            = optional(string, "https://iseja.net/claims/alias")
+    email            = optional(string, "https://iseja.net/claims/email")
+    groups           = optional(string, "https://iseja.net/claims/groups")
+    alias_property   = optional(string, "username")
+    groups_full_path = optional(bool, false)
+  })
+  default = {}
+
+  validation {
+    condition     = contains(["username", "firstName", "lastName", "email"], var.saml_claims.alias_property)
+    error_message = "alias_property must be one of username, firstName, lastName, email."
+  }
+}
+
+variable "saml_signature_algorithm" {
+  description = "Signature algorithm of the assertions and documents Keycloak signs for SAML clients. Checkmk accepts RSA-SHA256/384/512 and ECDSA-SHA256/384/512, so `RSA_SHA256` is the common denominator."
+  type        = string
+  default     = "RSA_SHA256"
+
+  validation {
+    condition     = contains(["RSA_SHA256", "RSA_SHA512", "RSA_SHA256_MGF1", "RSA_SHA512_MGF1"], var.saml_signature_algorithm)
+    error_message = "saml_signature_algorithm must be RSA_SHA256, RSA_SHA512, RSA_SHA256_MGF1 or RSA_SHA512_MGF1."
+  }
+}

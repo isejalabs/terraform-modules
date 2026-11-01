@@ -47,13 +47,15 @@ data "keycloak_openid_client" "realm_management" {
   client_id = "${each.key}-realm"
 }
 
-resource "keycloak_openid_client_service_account_role" "realm_admin" {
-  for_each = var.existing_realms
+# Keycloak has no composite `realm-admin` role in these clients (it is a role of the `realm-management` client of
+# non-master realms), so the individual roles are assigned, the same set Keycloak grants the creator of a realm.
+resource "keycloak_openid_client_service_account_role" "realm_management" {
+  for_each = { for pair in setproduct(var.existing_realms, var.realm_management_roles) : "${pair[0]}/${pair[1]}" => pair }
 
   realm_id                = "master"
   service_account_user_id = keycloak_openid_client.this.service_account_user_id
-  client_id               = data.keycloak_openid_client.realm_management[each.key].id
-  role                    = "realm-admin"
+  client_id               = data.keycloak_openid_client.realm_management[each.value[0]].id
+  role                    = each.value[1]
 }
 
 module "client_secret" {

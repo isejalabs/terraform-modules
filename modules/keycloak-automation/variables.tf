@@ -36,7 +36,7 @@ variable "existing_realms" {
   description = <<-EOT
     Names of realms that already exist and that the automation client has to manage, for example `["iseja", "admin"]`.
 
-    The client may create realms (`create-realm`), and Keycloak makes the creator the administrator of every realm it creates. A realm that was created by somebody else (the bootstrap admin, a restore of a dump) is not covered by that, so name it here: the client then gets `realm-admin` of that realm's `<realm>-realm` client. The realm must exist when the module is applied; leave this empty on a fresh instance.
+    The client may create realms (`create-realm`), and Keycloak makes the creator the administrator of every realm it creates. A realm that was created by somebody else (the bootstrap admin, a restore of a dump) is not covered by that, so name it here: the client then gets the `realm_management_roles` of that realm's `<realm>-realm` client. The realm must exist when the module is applied; leave this empty on a fresh instance.
   EOT
   type        = set(string)
   default     = []
@@ -51,4 +51,31 @@ variable "secret_rotation" {
   description = "Arbitrary value that, when changed, makes Keycloak generate a new client secret on the next apply (for example a date, `2026-11-01`). The new secret is written to the 1Password item in the same apply."
   type        = string
   default     = "initial"
+}
+
+variable "realm_management_roles" {
+  description = "Roles of a realm's `<realm>-realm` client in the master realm that the automation client gets for every realm in `existing_realms`. The default is the set Keycloak 26 grants the creator of a realm (`AdminRoles.ALL_REALM_ROLES`), so a realm the client created and one it was granted are administered the same way. Remove the organizations roles for a Keycloak older than 26."
+  type        = set(string)
+  default = [
+    "create-client",
+    "manage-authorization",
+    "manage-clients",
+    "manage-events",
+    "manage-identity-providers",
+    "manage-organizations",
+    "manage-realm",
+    "manage-users",
+    "query-clients",
+    "query-groups",
+    "query-organizations",
+    "query-realms",
+    "query-users",
+    "view-authorization",
+    "view-clients",
+    "view-events",
+    "view-identity-providers",
+    "view-organizations",
+    "view-realm",
+    "view-users",
+  ]
 }
