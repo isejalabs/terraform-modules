@@ -33,6 +33,8 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+- `saml_clients`: SAML clients (service providers) per realm with signed assertions, the ACS URL as the only redirect URI and mappers for user ID, alias, optionally e-mail, and the group list; `saml_claims` and `saml_signature_algorithm` tune the attribute names and the signature. New outputs `saml_idp_metadata_urls` and `saml_client_ids`. Built for the Checkmk Ultimate sites. ([#84](https://github.com/isejalabs/terraform-modules/issues/84))
+
 ### Changed
 
 ### Removed
