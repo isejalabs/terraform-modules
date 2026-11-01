@@ -6,6 +6,9 @@ resource "onepassword_item" "this" {
 
   note_value = var.note
 
+  username = var.username
+  password = var.password
+
   dynamic "section" {
     for_each = var.sections
     content {
