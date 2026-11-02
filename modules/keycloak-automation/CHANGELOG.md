@@ -12,6 +12,16 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.1.0] - 2026-11-02
+
+### Added
+
 - Initial module: a confidential service-account client in the `master` realm (client-credentials grant only) with `create-realm` and, for `existing_realms`, the realm-management roles of the realm's management client; its generated secret is written to a 1Password login item and can be rotated with `secret_rotation`. ([#82](https://github.com/isejalabs/terraform-modules/issues/82))
 
 ### Changed
