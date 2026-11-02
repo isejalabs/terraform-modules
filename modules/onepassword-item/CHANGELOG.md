@@ -33,6 +33,8 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+- Optional `var.username` and `var.password` for the top-level fields of a login item; `var.sections` now defaults to none, so an item may consist of only these. ([#82](https://github.com/isejalabs/terraform-modules/issues/82))
+
 ### Changed
 
 ### Removed

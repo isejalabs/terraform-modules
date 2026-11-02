@@ -26,8 +26,22 @@ variable "note" {
   default     = null
 }
 
+variable "username" {
+  description = "Username of the item (the top-level `username` of a login item), for example a client ID. Left unset, the item has no username."
+  type        = string
+  default     = null
+}
+
+variable "password" {
+  description = "Password of the item (the top-level `password` of a login item), for example a client secret. Left unset, 1Password does not get a password from this module."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "sections" {
   description = "Sections and fields to write into the item."
+  default     = []
   type = list(object({
     label = string
     fields = list(object({

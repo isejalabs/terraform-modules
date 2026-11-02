@@ -1,6 +1,21 @@
+locals {
+  # The provider logs in with a service-account client (client_item_title) or, as before, with an admin login
+  # (admin_item_title). Exactly one of them is set (validated on the variables).
+  use_client = var.client_item_title != null
+}
+
 data "onepassword_item" "admin" {
+  count = local.use_client ? 0 : 1
+
   vault = var.onepassword_vault_id
   title = var.admin_item_title
+}
+
+data "onepassword_item" "client" {
+  count = local.use_client ? 1 : 0
+
+  vault = var.onepassword_vault_id
+  title = var.client_item_title
 }
 
 data "onepassword_item" "ldap_bind" {
@@ -10,10 +25,14 @@ data "onepassword_item" "ldap_bind" {
 
 locals {
   # A Login item exposes `username`/`password` directly; an item made of plain fields keeps them in sections.
-  admin_fields = merge([for s in data.onepassword_item.admin.section : { for f in s.field : f.label => f.value }]...)
+  admin_fields = local.use_client ? {} : merge([for s in data.onepassword_item.admin[0].section : { for f in s.field : f.label => f.value }]...)
 
-  admin_username = coalesce(data.onepassword_item.admin.username, try(local.admin_fields["username"], null))
-  admin_password = coalesce(data.onepassword_item.admin.password, try(local.admin_fields["password"], null))
+  admin_username = local.use_client ? null : coalesce(data.onepassword_item.admin[0].username, try(local.admin_fields["username"], null))
+  admin_password = local.use_client ? null : coalesce(data.onepassword_item.admin[0].password, try(local.admin_fields["password"], null))
+
+  # The client item written by the keycloak-automation module is a login item: client ID as username, secret as password.
+  client_id     = local.use_client ? data.onepassword_item.client[0].username : "admin-cli"
+  client_secret = local.use_client ? data.onepassword_item.client[0].password : null
 
   # Keycloak takes several URLs, separated by a space, and tries them in order.
   ldap_connection_url = join(" ", var.ldap.connection_urls)
