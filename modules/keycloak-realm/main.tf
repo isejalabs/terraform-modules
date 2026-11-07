@@ -34,6 +34,9 @@ locals {
   client_id     = local.use_client ? data.onepassword_item.client[0].username : "admin-cli"
   client_secret = local.use_client ? data.onepassword_item.client[0].password : null
 
+  # Hostname of the Keycloak URL, the default relying-party ID of the WebAuthn policy.
+  keycloak_hostname = regex("^https?://([^/:]+)", var.keycloak_url)[0]
+
   # Keycloak takes several URLs, separated by a space, and tries them in order.
   ldap_connection_url = join(" ", var.ldap.connection_urls)
 }
@@ -77,12 +80,13 @@ resource "keycloak_realm" "this" {
     }
   }
 
-  # Any WebAuthn authenticator (passkey, YubiKey, platform) as a second factor; the flows that require it are set up
-  # separately (isejalabs/homelab#1827).
+  # Any WebAuthn authenticator (passkey, YubiKey, platform) as a second factor; the flow that requires it is
+  # `second_factor` (mfa.tf).
   web_authn_policy {
     relying_party_entity_name     = each.value.display_name
+    relying_party_id              = coalesce(each.value.web_authn.relying_party_id, var.web_authn.relying_party_id, local.keycloak_hostname)
     signature_algorithms          = var.web_authn.signature_algorithms
-    user_verification_requirement = var.web_authn.user_verification_requirement
+    user_verification_requirement = coalesce(each.value.web_authn.user_verification_requirement, var.web_authn.user_verification_requirement)
   }
 }
 

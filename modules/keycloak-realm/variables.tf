@@ -101,6 +101,8 @@ variable "realms" {
     - `groups_filter`: LDAP filter restricting those groups, `null` for all of them.
     - `password_policy`: Keycloak password policy string. Only relevant for local credentials; UCS stays the authority for the password.
     - `max_login_failures`: failed logins before the temporary lockout (brute-force detection).
+    - `web_authn`: overrides of the module-wide `web_authn` policy for this realm: `relying_party_id` and `user_verification_requirement`. Unset values fall back to the module-wide policy.
+    - `second_factor`: `null` (default) keeps Keycloak's built-in `browser` flow. An object replaces it with a flow that asks every password login for a second factor (a passkey or security key through WebAuthn, or a one-time code through TOTP) and sends a user who has none through the required action that registers one, `enroll` being `webauthn` (default) or `totp`. Kerberos or other first factors are not part of that flow.
   EOT
   type = map(object({
     display_name       = string
@@ -110,11 +112,23 @@ variable "realms" {
     groups_filter      = optional(string)
     password_policy    = optional(string, "length(12) and notUsername")
     max_login_failures = optional(number, 5)
+    web_authn = optional(object({
+      relying_party_id              = optional(string)
+      user_verification_requirement = optional(string)
+    }), {})
+    second_factor = optional(object({
+      enroll = optional(string, "webauthn")
+    }))
   }))
 
   validation {
     condition     = length(var.realms) > 0 && !contains(keys(var.realms), "master")
     error_message = "realms must not be empty and must not contain the master realm."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.realms : r.second_factor == null || contains(["webauthn", "totp"], r.second_factor.enroll)])
+    error_message = "second_factor.enroll must be webauthn or totp."
   }
 }
 
@@ -160,12 +174,24 @@ variable "brute_force" {
 }
 
 variable "web_authn" {
-  description = "WebAuthn policy of every realm (second factor with passkeys, YubiKeys or platform authenticators)."
+  description = <<-EOT
+    WebAuthn policy of every realm (second factor with passkeys, YubiKeys or platform authenticators); a realm can override `relying_party_id` and `user_verification_requirement` in `realms`.
+
+    - `relying_party_id`: the relying-party ID, a registrable domain suffix of the hostname users reach Keycloak on. Unset: the hostname of `keycloak_url`, set explicitly so it no longer depends on how Keycloak derives it from a request. A credential is bound to this ID: changing it (or the hostname, if it is derived) makes every enrolled passkey and security key unusable until it is enrolled again.
+    - `signature_algorithms`: accepted signature algorithms in order of preference.
+    - `user_verification_requirement`: `required` (PIN or biometric on the authenticator), `preferred` or `discouraged`.
+  EOT
   type = object({
+    relying_party_id              = optional(string)
     signature_algorithms          = optional(list(string), ["ES256", "RS256"])
     user_verification_requirement = optional(string, "preferred")
   })
   default = {}
+
+  validation {
+    condition     = contains(["required", "preferred", "discouraged"], var.web_authn.user_verification_requirement)
+    error_message = "web_authn.user_verification_requirement must be required, preferred or discouraged."
+  }
 }
 
 variable "groups_claim" {
