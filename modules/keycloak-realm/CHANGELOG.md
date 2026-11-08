@@ -33,6 +33,16 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.6.0] - 2026-11-08
+
+### Added
+
 - `oidc_clients`: OIDC clients per realm (authorization code flow only) with redirect URIs, post-logout redirect URIs, web origins, public or confidential, PKCE and the `groups` client scope as a default scope, so the ID token, the access token and the userinfo response carry the `groups` claim. The generated secret of a confidential client is written to a 1Password item (`oidc_secret_item_title_format`, or `secret_item_title` per client), never to an output. `oidc_default_scopes` sets the default scopes of the clients. New outputs `oidc_client_ids`, `oidc_issuer_urls` and `oidc_secret_item_titles`. ([#92](https://github.com/isejalabs/terraform-modules/issues/92))
 
 ### Changed
