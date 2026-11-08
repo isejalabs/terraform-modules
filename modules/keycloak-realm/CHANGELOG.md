@@ -33,6 +33,16 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.5.0] - 2026-11-08
+
+### Added
+
 - `web_authn.relying_party_id` (module-wide) and `realms[*].web_authn` (per realm: `relying_party_id`, `user_verification_requirement`). The relying-party ID is now always set explicitly, by default to the hostname of `keycloak_url`, which is what Keycloak derived before; the plan shows it as an in-place change of the WebAuthn policy. Changing it later invalidates every enrolled passkey and security key.
 - `realms[*].second_factor` (default `null`): replaces the realm's browser flow with `browser-mfa`, which asks every password login for a WebAuthn authenticator or a TOTP code and sends a user with neither through the registration of one (`enroll = "webauthn"` or `"totp"`). Keycloak's built-in `browser` flow is left untouched.
 
