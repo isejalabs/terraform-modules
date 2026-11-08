@@ -275,3 +275,74 @@ variable "saml_signature_algorithm" {
     error_message = "saml_signature_algorithm must be RSA_SHA256, RSA_SHA512, RSA_SHA256_MGF1 or RSA_SHA512_MGF1."
   }
 }
+
+variable "oidc_clients" {
+  description = <<-EOT
+    OIDC clients (relying parties) to register, keyed by a name of your choice that identifies the entry in the state and, unless `client_id` is set, is the client ID; the key can not be reused for another client without recreating it. Authorization code flow only (no implicit flow, password grant or service account).
+
+    - `realm`: the realm of `realms` whose accounts may use the client. An application that accepts accounts from two realms needs one client per realm.
+    - `redirect_uris`: valid redirect URIs, `https://` only; a trailing `*` wildcard is allowed. For oauth2-proxy `https://<host>/oauth2/callback`.
+    - `post_logout_redirect_uris`: valid post-logout redirect URIs, `https://` only; default none.
+    - `web_origins`: allowed CORS origins; default none.
+    - `client_id`: the OIDC client ID, the key when unset.
+    - `name`: display name in the admin console, the key when unset.
+    - `public`: a public client has no secret (single-page apps, native clients), a confidential one (default) gets a generated secret that is written to 1Password.
+    - `pkce`: require PKCE with S256. Unset: on for public clients, off for confidential ones. Turn it off only for an application that does not send a code challenge (for example Proxmox).
+    - `groups_scope`: add the `groups` client scope as a default scope, so the ID token, the access token and the userinfo response carry the `groups` claim; default `true`.
+    - `secret_item_title`: title of the 1Password item for the secret of a confidential client, `oidc_secret_item_title_format` applied to the key when unset.
+  EOT
+  type = map(object({
+    realm                     = string
+    redirect_uris             = list(string)
+    post_logout_redirect_uris = optional(list(string), [])
+    web_origins               = optional(list(string), [])
+    client_id                 = optional(string)
+    name                      = optional(string)
+    public                    = optional(bool, false)
+    pkce                      = optional(bool)
+    groups_scope              = optional(bool, true)
+    secret_item_title         = optional(string)
+  }))
+  default = {}
+
+  validation {
+    condition     = alltrue([for c in var.oidc_clients : contains(keys(var.realms), c.realm)])
+    error_message = "Every oidc_clients entry must name a realm that is defined in realms."
+  }
+
+  validation {
+    condition = alltrue([
+      for c in var.oidc_clients : length(c.redirect_uris) > 0 && alltrue([
+        for u in concat(c.redirect_uris, c.post_logout_redirect_uris, c.web_origins) : startswith(u, "https://")
+      ])
+    ])
+    error_message = "Every oidc_clients entry needs at least one redirect URI, and its redirect URIs, post-logout redirect URIs and web origins must be https:// URLs."
+  }
+
+  validation {
+    condition     = length(distinct([for key, c in var.oidc_clients : "${c.realm} ${coalesce(c.client_id, key)}"])) == length(var.oidc_clients)
+    error_message = "A client ID can only be registered once per realm."
+  }
+
+  validation {
+    condition     = length(distinct([for key, c in var.oidc_clients : coalesce(c.secret_item_title, format(var.oidc_secret_item_title_format, key)) if !c.public])) == length([for c in var.oidc_clients : c if !c.public])
+    error_message = "Every confidential OIDC client needs its own 1Password item title (secret_item_title or oidc_secret_item_title_format with %s)."
+  }
+}
+
+variable "oidc_secret_item_title_format" {
+  description = "Format of the 1Password item title that receives the generated secret of a confidential OIDC client, applied to the key of the `oidc_clients` entry (`%s`), for example `keycloak-oidc-%s#dev`. Include the environment so that the environments do not share items. An entry's `secret_item_title` overrides it."
+  type        = string
+  default     = "keycloak-oidc-%s"
+
+  validation {
+    condition     = length(regexall("%s", var.oidc_secret_item_title_format)) == 1
+    error_message = "oidc_secret_item_title_format must contain %s exactly once."
+  }
+}
+
+variable "oidc_default_scopes" {
+  description = "Default client scopes every OIDC client gets (besides `groups` where `groups_scope` is set). The defaults are the ones Keycloak 26 gives a new client; the list is authoritative for the client's default scopes, so a scope removed here is removed from the clients."
+  type        = list(string)
+  default     = ["basic", "web-origins", "acr", "roles", "profile", "email"]
+}
