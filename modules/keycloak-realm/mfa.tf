@@ -8,15 +8,18 @@
 #     ├ Username Password Form                                     REQUIRED      (the directory checks the password)
 #     ├ browser-mfa verify                                         CONDITIONAL
 #     │ ├ Condition - user configured                              REQUIRED      (the user has a factor below)
-#     │ └ browser-mfa factor                                       REQUIRED
-#     │   ├ WebAuthn Authenticator                                 ALTERNATIVE   (shown first when both are set up)
-#     │   └ OTP Form                                               ALTERNATIVE   (the fallback, or "try another way")
+#     │ ├ WebAuthn Authenticator                                   ALTERNATIVE   (shown first when both are set up)
+#     │ └ OTP Form                                                 ALTERNATIVE   (the fallback, or "try another way")
 #     └ browser-mfa enroll                                         CONDITIONAL
 #       ├ Condition - sub-flow executed (verify, not executed)     REQUIRED      (the user had no factor)
 #       └ WebAuthn Authenticator or OTP Form (`enroll`)            REQUIRED      (its setup page is the required action)
 #
 # Keycloak 25+ ignores the creation order, so every entry has an explicit `priority` (10, 20, 30 within its parent): a
 # flow whose entries all have priority 0 runs them in an arbitrary order (the factor before the password form).
+#
+# The factors sit directly in the "verify" sub-flow, not in a sub-flow of their own: "Condition - user configured" only
+# looks at the authenticators next to it and skips nested sub-flows, so it would count a nested factor sub-flow as
+# "configured" for every user and send users without a factor into a failing login.
 #
 # The alternatives alone would fail the login of a user without a factor (Keycloak only offers setup for a REQUIRED
 # authenticator), hence the second sub-flow. Keycloak's own `browser` flow is not edited, so unsetting `second_factor`
@@ -29,7 +32,6 @@ locals {
     browser = "browser-mfa"
     forms   = "browser-mfa forms"
     verify  = "browser-mfa verify"
-    factor  = "browser-mfa factor"
     enroll  = "browser-mfa enroll"
   }
 
@@ -99,36 +101,26 @@ resource "keycloak_authentication_execution" "mfa_verify_condition" {
   priority          = 10
 }
 
-resource "keycloak_authentication_subflow" "mfa_factor" {
-  for_each = local.second_factor_realms
-
-  realm_id          = keycloak_realm.this[each.key].id
-  parent_flow_alias = keycloak_authentication_subflow.mfa_verify[each.key].alias
-  alias             = local.mfa_flow.factor
-  requirement       = "REQUIRED"
-  priority          = 20
-
-  depends_on = [keycloak_authentication_execution.mfa_verify_condition]
-}
-
 resource "keycloak_authentication_execution" "mfa_webauthn" {
   for_each = local.second_factor_realms
 
   realm_id          = keycloak_realm.this[each.key].id
-  parent_flow_alias = keycloak_authentication_subflow.mfa_factor[each.key].alias
+  parent_flow_alias = keycloak_authentication_subflow.mfa_verify[each.key].alias
   authenticator     = "webauthn-authenticator"
   requirement       = "ALTERNATIVE"
-  priority          = 10
+  priority          = 20
+
+  depends_on = [keycloak_authentication_execution.mfa_verify_condition]
 }
 
 resource "keycloak_authentication_execution" "mfa_otp" {
   for_each = local.second_factor_realms
 
   realm_id          = keycloak_realm.this[each.key].id
-  parent_flow_alias = keycloak_authentication_subflow.mfa_factor[each.key].alias
+  parent_flow_alias = keycloak_authentication_subflow.mfa_verify[each.key].alias
   authenticator     = "auth-otp-form"
   requirement       = "ALTERNATIVE"
-  priority          = 20
+  priority          = 30
 
   depends_on = [keycloak_authentication_execution.mfa_webauthn]
 }

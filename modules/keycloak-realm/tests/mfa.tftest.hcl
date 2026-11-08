@@ -161,7 +161,7 @@ run "second_factor_creates_flow_and_binding_for_that_realm_only" {
       keycloak_authentication_execution.mfa_cookie["admin"].priority < keycloak_authentication_subflow.mfa_forms["admin"].priority &&
       keycloak_authentication_execution.mfa_password["admin"].priority < keycloak_authentication_subflow.mfa_verify["admin"].priority &&
       keycloak_authentication_subflow.mfa_verify["admin"].priority < keycloak_authentication_subflow.mfa_enroll["admin"].priority &&
-      keycloak_authentication_execution.mfa_verify_condition["admin"].priority < keycloak_authentication_subflow.mfa_factor["admin"].priority &&
+      keycloak_authentication_execution.mfa_verify_condition["admin"].priority < keycloak_authentication_execution.mfa_webauthn["admin"].priority &&
       keycloak_authentication_execution.mfa_webauthn["admin"].priority < keycloak_authentication_execution.mfa_otp["admin"].priority &&
       keycloak_authentication_execution.mfa_enroll_condition["admin"].priority < keycloak_authentication_execution.mfa_enroll["admin"].priority
     )
