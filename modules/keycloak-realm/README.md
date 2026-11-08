@@ -125,7 +125,7 @@ oidc_clients = {
 - **Groups claim:** with `groups_scope` the client gets the `groups` scope (see `groups_claim`) as a default scope, which puts the group names in the ID token, the access token and the userinfo response. `oidc_default_scopes` lists the other default scopes (the defaults of Keycloak 26); the list is authoritative for the default scopes of the clients, the optional scopes are not touched.
 - **Secret:** a confidential client gets a generated secret that is written to a 1Password login item (client ID as `username`, secret as `password`, the shape `keycloak-automation` writes) in the vault `onepassword_vault_id`. The title is `oidc_secret_item_title_format` applied to the key, or `secret_item_title`. An ExternalSecret hands the item to the application, other tooling reads it from 1Password. The secret is not an output; it is part of the state. A public client has no secret and no item.
 - **Issuer:** the output `oidc_issuer_urls` has `<keycloak_url>/realms/<realm>` per realm, the discovery document is at `<issuer>/.well-known/openid-configuration`.
-- **Secret rotation:** taint the client's secret by recreating the client (`-replace='keycloak_openid_client.this["<key>"]'`); the item is updated in the same apply.
+- **Secret rotation:** recreate the client (`-replace='keycloak_openid_client.this["<key>"]'`, which also ends its sessions); the item is updated in the same apply. Regenerating the secret in the admin console instead makes the state and the item stale until the next apply refreshes them.
 
 ## 1Password items
 
@@ -149,7 +149,7 @@ oidc_clients = {
 - Brute-force detection only temporarily locks an account in Keycloak; it does not lock the UCS account. UCS stays authoritative for locking or disabling an account.
 - Group names are imported as top-level Keycloak groups; the `groups` claim carries the names without a path.
 - The SAML client settings are checked offline against the provider schema only; whether an SP accepts the assertion (signature algorithm, attribute names) is only known with a real SP. The Checkmk side was not exercised with this module at the time of the first release.
-- The OIDC client settings are checked offline against the provider schema only; the login with a real client and the `groups` claim were verified against a Keycloak 26 in the homelab `dev` environment (isejalabs/homelab#2227).
+- The OIDC client settings are checked offline against the provider schema; against a Keycloak 26 (homelab `dev`, isejalabs/homelab#2227) a client was created and the admin API's scope evaluation returned the `groups` claim in the ID token, the access token and the userinfo response, and the item secret equalled the client secret. A browser login through a relying party is not covered by the module tests, and the `admin` realm there requires a second factor.
 - The `groups` claim only holds the `sec.app.*` style groups the realm's group mapper imports (`groups_filter`), and only for accounts that were synchronised from the directory; an account that never logged in and was not synced has no groups yet.
 - A SAML client with `full_scope_allowed = false` sends no realm roles; authorization must come from the group attribute.
 
