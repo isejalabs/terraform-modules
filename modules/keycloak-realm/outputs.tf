@@ -19,3 +19,18 @@ output "saml_client_ids" {
   description = "Internal IDs of the SAML clients, keyed like `saml_clients`."
   value       = { for key, c in keycloak_saml_client.this : key => c.id }
 }
+
+output "oidc_client_ids" {
+  description = "Internal IDs of the OIDC clients, keyed like `oidc_clients`. The generated secrets are deliberately not outputs; they are in the 1Password items (`oidc_secret_item_title_format`)."
+  value       = { for key, c in keycloak_openid_client.this : key => c.id }
+}
+
+output "oidc_issuer_urls" {
+  description = "OIDC issuer URL per realm, keyed by realm name; the discovery document is at `<issuer>/.well-known/openid-configuration`."
+  value       = { for name in keys(var.realms) : name => "${var.keycloak_url}/realms/${name}" }
+}
+
+output "oidc_secret_item_titles" {
+  description = "Title of the 1Password item holding the client secret, per confidential OIDC client, keyed like `oidc_clients`."
+  value       = { for key, m in module.oidc_client_secret : key => coalesce(var.oidc_clients[key].secret_item_title, format(var.oidc_secret_item_title_format, key)) }
+}

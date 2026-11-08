@@ -5,6 +5,7 @@ Realm content for a Keycloak instance, for the identity platform described in [A
 - one realm per entry of `realms` (`iseja` and `admin` in the homelab), with a password policy, brute-force detection, security headers and a WebAuthn policy,
 - in each realm a **read-only** LDAP federation to the directory (UCS), users imported and synced periodically, with a user filter per realm so the realms admit disjoint accounts,
 - a group mapper that imports the directory groups, and a `groups` client scope that puts the group names into a `groups` claim for the clients that add it,
+- optionally OIDC clients (`oidc_clients`) for applications that sign humans in with OpenID Connect, natively or through a proxy such as oauth2-proxy,
 - optionally SAML clients (`saml_clients`) for applications that only speak SAML, such as the Checkmk Ultimate sites.
 
 Kerberos and the OIDC clients are not part of this module yet; they follow with [isejalabs/homelab#1827](https://github.com/isejalabs/homelab/issues/1827) and the per-service integrations.
@@ -97,6 +98,35 @@ saml_clients = {
 - **Request signatures:** the SP signs its requests with its own certificate. Unless `signing_certificate` is given, Keycloak does not require signed requests; add the certificate once the SP has created it to turn that on.
 - **Metadata:** the output `saml_idp_metadata_urls` has the identity provider metadata URL per realm, which the SP imports.
 
+## OIDC clients
+
+`oidc_clients` registers relying parties, one client per entry and realm: an application that accepts accounts from two realms (`iseja` and `admin`) gets two entries. Only the authorization code flow is enabled (no implicit flow, password grant or service account) and the tokens carry no realm role mappings; authorization comes from the `groups` claim.
+
+```hcl
+oidc_secret_item_title_format = "keycloak-oidc-%s#dev" # item per confidential client, %s = the key of the entry
+
+oidc_clients = {
+  "longhorn-admin" = {
+    realm         = "admin"
+    redirect_uris = ["https://longhorn.example.com/oauth2/callback"]
+  }
+  "flux-iseja" = {
+    realm                     = "iseja"
+    client_id                 = "flux-operator"
+    name                      = "Flux Operator (iseja)"
+    redirect_uris             = ["https://flux.example.com/oauth2/callback"]
+    post_logout_redirect_uris = ["https://flux.example.com/"]
+    pkce                      = true
+  }
+}
+```
+
+- **Settings per entry:** `redirect_uris` (required, `https://` only, a trailing `*` is allowed), `post_logout_redirect_uris`, `web_origins`, `client_id` and `name` (the key when unset), `public` (default `false`), `pkce` (S256; unset means on for public clients and off for confidential ones, turn it off only for an application that sends no code challenge), `groups_scope` (default `true`) and `secret_item_title`.
+- **Groups claim:** with `groups_scope` the client gets the `groups` scope (see `groups_claim`) as a default scope, which puts the group names in the ID token, the access token and the userinfo response. `oidc_default_scopes` lists the other default scopes (the defaults of Keycloak 26); the list is authoritative for the default scopes of the clients, the optional scopes are not touched.
+- **Secret:** a confidential client gets a generated secret that is written to a 1Password login item (client ID as `username`, secret as `password`, the shape `keycloak-automation` writes) in the vault `onepassword_vault_id`. The title is `oidc_secret_item_title_format` applied to the key, or `secret_item_title`. An ExternalSecret hands the item to the application, other tooling reads it from 1Password. The secret is not an output; it is part of the state. A public client has no secret and no item.
+- **Issuer:** the output `oidc_issuer_urls` has `<keycloak_url>/realms/<realm>` per realm, the discovery document is at `<issuer>/.well-known/openid-configuration`.
+- **Secret rotation:** taint the client's secret by recreating the client (`-replace='keycloak_openid_client.this["<key>"]'`); the item is updated in the same apply.
+
 ## 1Password items
 
 - `client_item_title` (recommended): the credential of a service-account client in the `master` realm, which the provider uses with the client-credentials grant. A login item with the client ID as `username` and the client secret as `password`, as written by the [`keycloak-automation`](../keycloak-automation) module. Routine automation then does not hold the break-glass login.
@@ -105,7 +135,7 @@ saml_clients = {
 
 ## Tests
 
-`tests/realm.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak, an LDAP server or 1Password, and the hostnames and DNs in it are placeholders. It checks one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, defaults and overrides of the settings above, that the provider logs in with the admin login or, when `client_item_title` is set, with the client credentials only (exactly one of the two must be set), and that a plain `ldap://` URL or the `master` realm is rejected. `tests/mfa.tftest.hcl` checks the relying-party ID (default from `keycloak_url`, module-wide and per-realm override, a port is dropped), that a realm without `second_factor` gets no flow or binding, that one with it gets the flow, the binding and the chosen enrollment authenticator, and that invalid input is rejected. `tests/saml.tftest.hcl` does the same for the SAML clients: signed assertions, the ACS URL as the only redirect URI, the mappers (e-mail only on request), signed requests only with a certificate, and invalid realms, URLs and duplicate client IDs are rejected.
+`tests/realm.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak, an LDAP server or 1Password, and the hostnames and DNs in it are placeholders. It checks one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, defaults and overrides of the settings above, that the provider logs in with the admin login or, when `client_item_title` is set, with the client credentials only (exactly one of the two must be set), and that a plain `ldap://` URL or the `master` realm is rejected. `tests/mfa.tftest.hcl` checks the relying-party ID (default from `keycloak_url`, module-wide and per-realm override, a port is dropped), that a realm without `second_factor` gets no flow or binding, that one with it gets the flow, the binding and the chosen enrollment authenticator, and that invalid input is rejected. `tests/oidc.tftest.hcl` does the same for the OIDC clients: authorization code flow only, PKCE defaults, the `groups` default scope, the secret item per confidential client, and invalid realms, plain `http://` URLs, a missing redirect URI, duplicate client IDs and duplicate item titles are rejected. `tests/saml.tftest.hcl` does the same for the SAML clients: signed assertions, the ACS URL as the only redirect URI, the mappers (e-mail only on request), signed requests only with a certificate, and invalid realms, URLs and duplicate client IDs are rejected.
 
 ## Caveats
 
@@ -119,6 +149,8 @@ saml_clients = {
 - Brute-force detection only temporarily locks an account in Keycloak; it does not lock the UCS account. UCS stays authoritative for locking or disabling an account.
 - Group names are imported as top-level Keycloak groups; the `groups` claim carries the names without a path.
 - The SAML client settings are checked offline against the provider schema only; whether an SP accepts the assertion (signature algorithm, attribute names) is only known with a real SP. The Checkmk side was not exercised with this module at the time of the first release.
+- The OIDC client settings are checked offline against the provider schema only; the login with a real client and the `groups` claim were verified against a Keycloak 26 in the homelab `dev` environment (isejalabs/homelab#2227).
+- The `groups` claim only holds the `sec.app.*` style groups the realm's group mapper imports (`groups_filter`), and only for accounts that were synchronised from the directory; an account that never logged in and was not synced has no groups yet.
 - A SAML client with `full_scope_allowed = false` sends no realm roles; authorization must come from the group attribute.
 
 ## Feedback
