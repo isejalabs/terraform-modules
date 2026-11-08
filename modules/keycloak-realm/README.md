@@ -7,7 +7,7 @@ Realm content for a Keycloak instance, for the identity platform described in [A
 - a group mapper that imports the directory groups, and a `groups` client scope that puts the group names into a `groups` claim for the clients that add it,
 - optionally SAML clients (`saml_clients`) for applications that only speak SAML, such as the Checkmk Ultimate sites.
 
-Kerberos, the MFA authentication flows and the OIDC clients are not part of this module yet; they follow with [isejalabs/homelab#1827](https://github.com/isejalabs/homelab/issues/1827) and the per-service integrations.
+Kerberos and the OIDC clients are not part of this module yet; they follow with [isejalabs/homelab#1827](https://github.com/isejalabs/homelab/issues/1827) and the per-service integrations.
 
 See the [Changelog](CHANGELOG.md) for all notable changes.
 
@@ -56,6 +56,22 @@ Everything else has a default that is what the homelab runs with and can be over
 
 See [`docs/module.md`](docs/module.md) for the full auto-generated reference.
 
+## Second factor
+
+`realms[*].second_factor` replaces the browser flow of a realm with `browser-mfa` (a realm without it keeps Keycloak's built-in `browser` flow, which is never edited, so unsetting the option restores it): the cookie, then the password form, then a sub-flow that asks a user who has a factor for a WebAuthn authenticator (passkey, security key) or a TOTP code, and, only when that sub-flow did not run, a required authenticator whose setup page registers a factor. The second sub-flow is needed because Keycloak offers credential setup only for a *required* authenticator; alternatives alone fail the login of a user without a factor. `enroll` picks which one (`webauthn`, default, or `totp`); Keycloak has no per-login choice between the two registrations. The flow's layout is drawn at the top of [`mfa.tf`](mfa.tf).
+
+```hcl
+realms = {
+  admin = {
+    # ...
+    second_factor = { enroll = "webauthn" }
+    web_authn     = { user_verification_requirement = "required" } # PIN or biometric on the authenticator
+  }
+}
+```
+
+The WebAuthn policy takes its relying-party ID from `realms[*].web_authn.relying_party_id`, then `web_authn.relying_party_id`, then the hostname of `keycloak_url`. A credential is bound to that ID: changing it (or the hostname it is derived from) makes every enrolled passkey and security key unusable until it is enrolled again; TOTP is not affected. Kerberos and step-up levels are not part of the flow.
+
 ## SAML clients
 
 `saml_clients` registers service providers that only speak SAML, one client per entry and realm. Checkmk, for example, accepts accounts of one realm per SAML connection, so a site that serves everyday and admin accounts gets two entries with the same entity ID, one in each realm:
@@ -89,7 +105,7 @@ saml_clients = {
 
 ## Tests
 
-`tests/realm.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak, an LDAP server or 1Password, and the hostnames and DNs in it are placeholders. It checks one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, defaults and overrides of the settings above, that the provider logs in with the admin login or, when `client_item_title` is set, with the client credentials only (exactly one of the two must be set), and that a plain `ldap://` URL or the `master` realm is rejected. `tests/saml.tftest.hcl` does the same for the SAML clients: signed assertions, the ACS URL as the only redirect URI, the mappers (e-mail only on request), signed requests only with a certificate, and invalid realms, URLs and duplicate client IDs are rejected.
+`tests/realm.tftest.hcl` runs offline (`tofu test` in this directory): both providers are mocked and every run is a plan, so nothing connects to Keycloak, an LDAP server or 1Password, and the hostnames and DNs in it are placeholders. It checks one realm, federation and group mapper per entry, the federation is read-only and imports users, connection URLs are joined in order, the bind credential comes from 1Password, defaults and overrides of the settings above, that the provider logs in with the admin login or, when `client_item_title` is set, with the client credentials only (exactly one of the two must be set), and that a plain `ldap://` URL or the `master` realm is rejected. `tests/mfa.tftest.hcl` checks the relying-party ID (default from `keycloak_url`, module-wide and per-realm override, a port is dropped), that a realm without `second_factor` gets no flow or binding, that one with it gets the flow, the binding and the chosen enrollment authenticator, and that invalid input is rejected. `tests/saml.tftest.hcl` does the same for the SAML clients: signed assertions, the ACS URL as the only redirect URI, the mappers (e-mail only on request), signed requests only with a certificate, and invalid realms, URLs and duplicate client IDs are rejected.
 
 ## Caveats
 
@@ -97,6 +113,8 @@ saml_clients = {
 - Keycloak creates the federation without connecting to the directory. A wrong URL, bind DN or filter shows up at the first sync (or with "Test connection" in the admin console), not at apply time.
 - The attribute and object class defaults (`uid`, `entryUUID`, `inetOrgPerson`, `posixGroup`, `uniqueMember`) are those of UCS; verify them against the directory before the first sync.
 - `user_filter` decides which realm an account may log in to. Keep the filters disjoint; an account that matches both realms' filters gets two identities.
+- The offline tests check the configuration, not the login. The flow was run against a throwaway Keycloak 26.8.1: a user without a factor is led to the passkey registration after the password, a user with a TOTP credential is asked for the code and signed in with it. Keep the factors directly in the `verify` sub-flow: `Condition - user configured` skips nested sub-flows, so a factor sub-flow inside it counts as configured for everyone and the login of a user without a factor fails with "Invalid username or password". Every entry needs an explicit `priority`, Keycloak 25+ ignores the creation order.
+- The flow does not offer an escape for a user who lost every factor; an administrator deletes the credentials in the user's *Credentials* tab and the next login registers a new one.
 - Changing the realm name destroys and recreates the realm (and everything in it), and every issuer URL changes with it.
 - Brute-force detection only temporarily locks an account in Keycloak; it does not lock the UCS account. UCS stays authoritative for locking or disabling an account.
 - Group names are imported as top-level Keycloak groups; the `groups` claim carries the names without a path.
