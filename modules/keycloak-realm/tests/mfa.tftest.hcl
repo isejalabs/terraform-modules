@@ -154,6 +154,19 @@ run "second_factor_creates_flow_and_binding_for_that_realm_only" {
     condition     = keycloak_authentication_execution_config.mfa_enroll_condition["admin"].config["check_result"] == "not-executed"
     error_message = "The enrollment must only run when the verification sub-flow did not."
   }
+
+  # Keycloak 25+ ignores the creation order: entries with the same priority run in an arbitrary order.
+  assert {
+    condition = (
+      keycloak_authentication_execution.mfa_cookie["admin"].priority < keycloak_authentication_subflow.mfa_forms["admin"].priority &&
+      keycloak_authentication_execution.mfa_password["admin"].priority < keycloak_authentication_subflow.mfa_verify["admin"].priority &&
+      keycloak_authentication_subflow.mfa_verify["admin"].priority < keycloak_authentication_subflow.mfa_enroll["admin"].priority &&
+      keycloak_authentication_execution.mfa_verify_condition["admin"].priority < keycloak_authentication_subflow.mfa_factor["admin"].priority &&
+      keycloak_authentication_execution.mfa_webauthn["admin"].priority < keycloak_authentication_execution.mfa_otp["admin"].priority &&
+      keycloak_authentication_execution.mfa_enroll_condition["admin"].priority < keycloak_authentication_execution.mfa_enroll["admin"].priority
+    )
+    error_message = "Every entry of the flow needs an explicit priority that keeps the order password, verify, enroll."
+  }
 }
 
 run "invalid_enroll_method_is_rejected" {

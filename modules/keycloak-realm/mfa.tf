@@ -15,6 +15,9 @@
 #       ├ Condition - sub-flow executed (verify, not executed)     REQUIRED      (the user had no factor)
 #       └ WebAuthn Authenticator or OTP Form (`enroll`)            REQUIRED      (its setup page is the required action)
 #
+# Keycloak 25+ ignores the creation order, so every entry has an explicit `priority` (10, 20, 30 within its parent): a
+# flow whose entries all have priority 0 runs them in an arbitrary order (the factor before the password form).
+#
 # The alternatives alone would fail the login of a user without a factor (Keycloak only offers setup for a REQUIRED
 # authenticator), hence the second sub-flow. Keycloak's own `browser` flow is not edited, so unsetting `second_factor`
 # restores it. Kerberos is not part of this flow.
@@ -48,6 +51,7 @@ resource "keycloak_authentication_execution" "mfa_cookie" {
   parent_flow_alias = keycloak_authentication_flow.mfa[each.key].alias
   authenticator     = "auth-cookie"
   requirement       = "ALTERNATIVE"
+  priority          = 10
 }
 
 resource "keycloak_authentication_subflow" "mfa_forms" {
@@ -57,6 +61,7 @@ resource "keycloak_authentication_subflow" "mfa_forms" {
   parent_flow_alias = keycloak_authentication_flow.mfa[each.key].alias
   alias             = local.mfa_flow.forms
   requirement       = "ALTERNATIVE"
+  priority          = 20
 
   depends_on = [keycloak_authentication_execution.mfa_cookie]
 }
@@ -68,6 +73,7 @@ resource "keycloak_authentication_execution" "mfa_password" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_forms[each.key].alias
   authenticator     = "auth-username-password-form"
   requirement       = "REQUIRED"
+  priority          = 10
 }
 
 # The user has a factor: ask for it.
@@ -78,6 +84,7 @@ resource "keycloak_authentication_subflow" "mfa_verify" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_forms[each.key].alias
   alias             = local.mfa_flow.verify
   requirement       = "CONDITIONAL"
+  priority          = 20
 
   depends_on = [keycloak_authentication_execution.mfa_password]
 }
@@ -89,6 +96,7 @@ resource "keycloak_authentication_execution" "mfa_verify_condition" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_verify[each.key].alias
   authenticator     = "conditional-user-configured"
   requirement       = "REQUIRED"
+  priority          = 10
 }
 
 resource "keycloak_authentication_subflow" "mfa_factor" {
@@ -98,6 +106,7 @@ resource "keycloak_authentication_subflow" "mfa_factor" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_verify[each.key].alias
   alias             = local.mfa_flow.factor
   requirement       = "REQUIRED"
+  priority          = 20
 
   depends_on = [keycloak_authentication_execution.mfa_verify_condition]
 }
@@ -109,6 +118,7 @@ resource "keycloak_authentication_execution" "mfa_webauthn" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_factor[each.key].alias
   authenticator     = "webauthn-authenticator"
   requirement       = "ALTERNATIVE"
+  priority          = 10
 }
 
 resource "keycloak_authentication_execution" "mfa_otp" {
@@ -118,6 +128,7 @@ resource "keycloak_authentication_execution" "mfa_otp" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_factor[each.key].alias
   authenticator     = "auth-otp-form"
   requirement       = "ALTERNATIVE"
+  priority          = 20
 
   depends_on = [keycloak_authentication_execution.mfa_webauthn]
 }
@@ -130,6 +141,7 @@ resource "keycloak_authentication_subflow" "mfa_enroll" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_forms[each.key].alias
   alias             = local.mfa_flow.enroll
   requirement       = "CONDITIONAL"
+  priority          = 30
 
   depends_on = [keycloak_authentication_subflow.mfa_verify]
 }
@@ -141,6 +153,7 @@ resource "keycloak_authentication_execution" "mfa_enroll_condition" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_enroll[each.key].alias
   authenticator     = "conditional-sub-flow-executed"
   requirement       = "REQUIRED"
+  priority          = 10
 }
 
 resource "keycloak_authentication_execution_config" "mfa_enroll_condition" {
@@ -162,6 +175,7 @@ resource "keycloak_authentication_execution" "mfa_enroll" {
   parent_flow_alias = keycloak_authentication_subflow.mfa_enroll[each.key].alias
   authenticator     = local.enroll_authenticator[each.value.enroll]
   requirement       = "REQUIRED"
+  priority          = 20
 
   depends_on = [keycloak_authentication_execution.mfa_enroll_condition]
 }
