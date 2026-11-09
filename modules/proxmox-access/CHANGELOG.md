@@ -12,6 +12,16 @@ This module tries to adhere to [Semantic Versioning](https://semver.org/spec/v2.
 
 ### Added
 
+### Changed
+
+### Removed
+
+### Fixed
+
+## [0.1.0] - 2026-11-09
+
+### Added
+
 - Initial module: OpenID Connect realms (`realms`, client secret read from a 1Password item and sent write-only), Proxmox groups (`groups`), custom roles (`roles`) and ACLs (`acls`) for a Proxmox VE cluster, via the `bpg/proxmox` provider. ([#95](https://github.com/isejalabs/terraform-modules/issues/95))
 
 ### Changed
